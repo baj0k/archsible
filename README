@@ -1,0 +1,5 @@
+archsible - ansible playbook for the post configuration process of archlinux.
+
+This playbook is designed to perform an initial configuration and hardening on a new desktop.
+It is configured to deploy my dotfiles and my builds of some tools that I use.
+This project was made mostly for educational purposes.
