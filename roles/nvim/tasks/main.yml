@@ -1,11 +1,12 @@
 - name: install neovim
+  become: yes
   package:
-    name:
+    name: 
       - neovim
     state: present
 
 - name: symlink dotfiles
   file:
     src: "{{ ansible_env.PWD }}/roles/nvim/files/init.vim"
-    path: "{{ ansible_env.PWD }}/.config/nvim/init.vim"
+    path: "~/.config/nvim/init.vim"
     state: link

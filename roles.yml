@@ -1,5 +1,4 @@
 - name: Setup local environment
-  hosts: all
-  become: yes
+  hosts: localhost
   roles:
     - nvim
