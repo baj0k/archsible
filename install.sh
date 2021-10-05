@@ -29,5 +29,5 @@
 #    esac
 #done
 
-git pull
-ansible-playbook -i hosts roles.yml -vv
+rsync -av -e ssh --exclude='.*' $(whoami)@desktop:/home/$(whoami)/fieldwork/archsible ~/
+ansible-playbook -i hosts desktop.yml -vv

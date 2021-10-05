@@ -1,0 +1,7 @@
+- include: base.yml
+
+- include: nvim.yml
+  when: nvim
+
+- include: suckless.yml
+  when: suckless

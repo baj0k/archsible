@@ -1,0 +1,36 @@
+- name: Install packages
+  become: yes
+  package:
+    name:
+      - pass
+      - make
+      - gcc
+      - pkg-config
+      - xorg
+      - xdg-user-dirs
+    state: present
+
+- name: Create ~/ctf directory
+  file:
+    path: ~/ctf
+    state: directory
+
+- name: Create ~/fieldwork directory
+  file:
+    path: ~/fieldwork
+    state: directory
+
+- name: Create ~/repos directory
+  file:
+    path: ~/repos
+    state: directory
+
+- name: Create ~/tmp directory
+  file:
+    path: ~/tmp
+    state: directory
+
+- name: Create ~/.local/bin directory
+  file:
+    path: ~/.local/bin
+    state: directory
