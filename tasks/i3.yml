@@ -1,0 +1,15 @@
+- include: xorg.yml
+
+- name: i3 - Install packages
+  become: yes
+  package:
+    name:
+      - i3-gaps
+      - i3blocks
+    state: present
+
+- name: i3 - Symlink configuration
+  file:
+    src: "{{ ansible_env.PWD }}/files/i3"
+    path: "~/.config/i3"
+    state: link

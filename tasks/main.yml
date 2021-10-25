@@ -1,7 +1,60 @@
-- include: base.yml
+# System configuration
+- include: prelim.yml
+
+- include: system/system.yml
+  become: yes
+
+- include: system/blackarch.yml
+  when: blackarch
+
+- include: system/bluetooth.yml
+  when: bluetooth
+
+# Software configuration
+- include: abook.yml
+  when: abook
+
+- include: dunst.yml
+  when: dunst
+
+- include: firefox.yml
+  when: firefox
+
+- include: i3.yml
+  when: i3
+
+- include: mpd.yml
+  when: mpd
+
+- include: mpv.yml
+  when: mpv
+
+- include: mutt.yml
+  when: mutt
+
+- include: ncmpcpp.yml
+  when: ncmpcpp
+
+- include: neofetch.yml
+  when: neofetch
+
+- include: newsboat.yml
+  when: newsboat
 
 - include: nvim.yml
   when: nvim
 
+- include: ranger.yml
+  when: ranger
+
 - include: suckless.yml
   when: suckless
+
+- include: tmux.yml
+  when: tmux
+
+- include: zathura.yml
+  when: zathura
+
+- include: zsh.yml
+  when: zsh

@@ -1,0 +1,12 @@
+- name: Tmux - Install packages
+  become: yes
+  package:
+    name: 
+      - tmux
+    state: present
+
+- name: Tmux - Symlink configuration
+  file:
+    src: "{{ ansible_env.PWD }}/files/tmux"
+    path: "~/.config/tmux"
+    state: link

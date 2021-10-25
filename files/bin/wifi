@@ -1,0 +1,16 @@
+#!/bin/bash
+
+ssid=$(wpa_cli -i wlan0 scan > /dev/null 2>&1 && sleep 3 && wpa_cli -i wlan0 scan_results | cut -f 5 | tail -n +2 | sort -u | dmenu -i -p "Select connection:")
+
+([ $? -eq 1 ] && exit 1) || [ -n "${ssid}" ] && wpa_cli -i wlan0 reconfigure && wpa_cli -i wlan0 list_networks | tail -n +2 | cut -f 2 | grep -Ff <(echo "${ssid}")
+
+case $? in
+    0) id=$(wpa_cli -i wlan0 list_network | grep "${ssid}" | cut -f 1)
+       wpa_cli -i wlan0 select_network "${id}" && for i in $(wpa_cli -i wlan0 list_network | cut -f 1 | tail -n +2); do wpa_cli -i wlan0 enable_network "${i}"; done ;;
+    1) passphrase=$(echo '' | dmenu -i -p 'Enter passphrase:')
+       [ $? -eq 0 ] && ( [ "${#passphrase}" -lt 8 ] && notify-send -t 10000 "Passphrase must be 8 or longer") || psk=$(wpa_passphrase "${ssid}" "${passphrase}" | grep '[[:blank:]]psk' | sed 's/^.*psk=//')
+       id=$(wpa_cli -i wlan0 add_network)
+       wpa_cli -i wlan0 set_network "${id}" ssid \""${ssid}"\" && wpa_cli -i wlan0 set_network "${id}" psk "${psk}" && wpa_cli -i wlan0 enable_network "${id}" && wpa_cli -i wlan0 save_config ;;
+esac
+
+sleep 4 && [ "$(cat /sys/class/net/wlan0/carrier)" -eq 1 ] && notify-send -t 10000 "Connected to: ${ssid}" 

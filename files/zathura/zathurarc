@@ -1,0 +1,37 @@
+# zathura conf file
+
+# General
+set font "DejaVu Sans Mono 8"
+set adjust-open "best-fit"
+
+# Transparency
+set recolor true
+set default-bg rgba(0,0,0,0.8)
+set recolor-lightcolor rgba(255,255,255,0)
+set statusbar-bg rgba(255,255,255,0)
+set inputbar-bg rgba(255,255,255,0)
+set completion-group-bg rgba(255,255,255,0)
+set completion-highlight-bg rgba(255,255,255,0)
+set completion-bg rgba(255,255,255,0)
+
+# Colors
+set statusbar-fg "#00FFFF"
+set inputbar-fg "#00FFFF"
+set completion-group-fg "#00FFFF"
+set completion-highlight-fg "#C4A000"
+set completion-fg "#006666"
+set highlight-active-color "#00FFFF"
+
+# Clipboard
+set selection-clipboard clipboard
+
+# Side-by-side
+set first-page-column 1:1
+
+# Filename and path 
+set statusbar-home-tilde true
+
+# Bindings
+map p print
+map i recolor
+map R reload

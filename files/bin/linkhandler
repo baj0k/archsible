@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Fallback to browser
+[ -z "$1" ] && { "${BROWSER:?}"; exit; }
+
+case "$1" in
+	# mpv
+	*mkv|*webm|*mp4|*gifv|*youtube.com/watch*|*invidious.13ad.de*|*://videos.*|*youtube.com/playlist*|*youtu.be*|*hooktube.com*|*bitchute.com*|*streamable.com*|*v.redd.it*|*libsyn.com*|*gfycat*)
+		setsid mpv -quiet "$1" >/dev/null 2>&1 & ;;
+	# sxiv
+	*png|*jpg|*jpe|*jpeg|*gif|*png?*)
+		curl -sL "$1" > "/tmp/$(echo "$1" | sed "s/.*\///")" && sxiv -b -a "/tmp/$(echo "$1" | sed "s/.*\///")"  >/dev/null 2>&1 & ;;
+	# zathura
+	*pdf)
+		notify-send -u low 'Loading...' | curl -sL "$1" > "/tmp/$(echo "$1" | sed "s/.*\///")" && zathura "/tmp/$(echo "$1" | sed "s/.*\///")"  >/dev/null 2>&1 & ;;
+	# fix with some podcast script
+	*mp3|*flac|*opus|*mp3?source*)
+		setsid tsp curl -LO "$1" >/dev/null 2>&1 & ;;
+	*)
+		if [ -f "$1" ]; then "${TERMINAL:?}" -e "${EDITOR:?} $1"
+		else setsid "${BROWSER} $1" >/dev/null 2>&1 & fi ;;
+esac

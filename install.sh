@@ -29,5 +29,6 @@
 #    esac
 #done
 
-rsync -av -e ssh --exclude='.*' $(whoami)@desktop:/home/$(whoami)/fieldwork/archsible ~/
-ansible-playbook -i hosts desktop.yml -vv
+ansible-galaxy collection install kewlfft.aur
+rsync -av -e ssh --exclude='.git' $(whoami)@desktop:/home/$(whoami)/fieldwork/archsible ~/
+ansible-playbook -i hosts main.yml -vv

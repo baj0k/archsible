@@ -1,0 +1,17 @@
+- name: Mpd - Install packages
+  become: yes
+  package:
+    name: 
+      - mpd
+    state: present
+
+- name: Mpd - Create directories
+  file:
+    path: "~/.config/mpd"
+    state: directory
+
+- name: Mpd - Symlink configuration
+  file:
+    src: "{{ ansible_env.PWD }}/files/mpd/mpd.conf"
+    path: "~/.config/mpd/mpd.conf"
+    state: link

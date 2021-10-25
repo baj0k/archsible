@@ -1,0 +1,4 @@
+#!/bin/sh
+
+vpn=$(find "${XDG_DATA_HOME:?}/openvpn/" -name "*.ovpn" | sed 's/.ovpn$//' | dmenu -l 8 -p "Select connection:" "$@")
+[ -f "${XDG_DATA_HOME}/openvpn/${vpn}.ovpn" ] && openvpn --config "${XDG_DATA_HOME}/openvpn/${vpn}.ovpn" --daemon

@@ -1,0 +1,12 @@
+- name: Neofetch - Install packages
+  become: yes
+  package:
+    name: 
+      - neofetch
+    state: present
+
+- name: Neofetch - Symlink configuration
+  file:
+    src: "{{ ansible_env.PWD }}/files/neofetch"
+    path: "~/.config/neofetch"
+    state: link

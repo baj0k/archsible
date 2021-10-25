@@ -1,0 +1,13 @@
+- name: Mpv - Install packages
+  become: yes
+  package:
+    name: 
+      - mpv
+      - youtube-dl
+    state: present
+
+- name: Mpv - Symlink configuration
+  file:
+    src: "{{ ansible_env.PWD }}/files/mpv"
+    path: "~/.config/mpv"
+    state: link

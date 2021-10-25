@@ -1,0 +1,12 @@
+#- name: Abook - Install packages
+#  become: yes
+#  package:
+#    name: 
+#      - abook
+#    state: present
+#
+#- name: Abook - Symlink configuration
+#  file:
+#    src: "{{ ansible_env.PWD }}/files/abook"
+#    path: "~/.config/abook"
+#    state: link

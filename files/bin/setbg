@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Wallpaper link
+wall="${XDG_DATA_HOME:?}/wall"
+
+# If file, set as a wallpaper
+[ -f "$1" ] && ln -sf "$(readlink -f "$1")" "${wall}"
+
+# If directory, choose random file from inside
+[ -d "$1" ] && ln -sf "$(find "$(readlink -f "$1")" -iregex '.*.\(jpg\|jpeg\|png\|gif\)' -type f | shuf -n 1)" "${wall}"
+
+# If no argument,choose random file from wallpaper directory
+[ -z "$1" ] && ln -sf "$(find "${HOME}/pictures/wallpaper" -iregex '.*.\(jpg\|jpeg\|png\|gif\)' -type f | shuf -n 1)" "${wall}"
+
+xwallpaper --zoom "${wall}"

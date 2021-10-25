@@ -1,0 +1,60 @@
+- name: Network - Setup DNS
+  lineinfile:
+    path: /etc/resolv.conf
+    line: nameserver 1.1.1.1
+    state: present
+
+- name: Pacman - Download mirrorlist
+  get_url:
+    url: "https://archlinux.org/mirrorlist/?country=PL&protocol=https&use_mirror_status=on"
+    dest: /etc/pacman.d/mirrorlist
+    force: yes
+
+- name: Pacman - Uncomment mirrors
+  replace:
+    path: /etc/pacman.d/mirrorlist
+    regexp: '##.*\n#Server'
+    replace: 'Server'
+
+- name: Pacman - Symlink configuration
+  file:
+    src: "{{ ansible_env.PWD }}/files/etc/pacman.conf"
+    path: /etc/pacman.conf
+    state: link
+    force: yes
+
+- name: AUR - Install AUR helper
+  become: no
+  kewlfft.aur.aur:
+    name: pikaur
+    use: makepkg
+    state: present
+  when: aur
+
+- name: System - Update system
+  pacman:
+    update_cache: yes
+    upgrade: yes
+
+- name: System - Install packages
+  package:
+    name:
+      #      - sudo
+      #      - git
+      #      - openssh
+      #      - acpi
+      - bat
+      - wget
+      - rsync
+      - man-db
+      - man-pages
+      - base-devel
+      - dash
+      # fonts
+      - noto-fonts
+      - ttf-inconsolata
+      - ttf-liberation
+      - ttf-joypixels
+      - ttf-dejavu
+      - ttf-font-awesome
+    state: present

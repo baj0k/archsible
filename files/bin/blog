@@ -1,0 +1,7 @@
+#!/bin/sh
+
+echo 'deploying'
+
+rm -rf public/ && hugo --minify && git add -A && git commit -m 'update' && git push
+
+echo 'deployment complete'

@@ -1,0 +1,17 @@
+#!/bin/sh
+OPENVPN_CLIENTS_DIR="/etc/openvpn/client/"
+connection=$(pgrep openvpn -a | cut -d' ' -f 6- | sed 's/.conf//')
+
+[ -n "${BLOCK_BUTTON}" ] && case "${BLOCK_BUTTON}" in
+    1) # left click, start selected connection
+       connection=$(find "${OPENVPN_CLIENTS_DIR:?}" -name '*.conf' | sed 's/.*\/client\///' | sed 's/\.conf//' | dmenu -i -p "Select connection:")
+       [ -n "${connection}" ] && sudo systemctl stop openvpn-client@* && sudo systemctl start openvpn-client@"${connection}" && notify-send "Connected to: ${connection}" && sleep 1 && pkill -RTMIN+10 i3blocks ;;
+    2) # middle click, restart current connection
+       sudo systemctl restart openvpn-client@"${connection}" && notify-send "Connection restarted" && sleep 1 && pkill -RTMIN+10 i3blocks ;;
+    3) # right click, stop current connection
+       sudo systemctl stop openvpn-client@"${connection}" && connection="off" && pkill -RTMIN+10 i3blocks ;;
+    *) ;;
+esac
+
+[ -z "${connection}" ] && connection="off"
+echo "${connection}"

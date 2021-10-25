@@ -1,0 +1,10 @@
+#!/bin/sh
+
+[ -n "${BLOCK_BUTTON}" ] && case "${BLOCK_BUTTON}" in
+    1) pactl set-sink-mute "@DEFAULT_SINK@" toggle ;; # left click, toggle mute
+    4) pactl set-sink-volume "@DEFAULT_SINK@" +5% ;; # scroll up, increase
+    5) pactl set-sink-volume "@DEFAULT_SINK@" -5% ;; # scroll down, decrease
+    *) ;;
+esac
+
+pamixer --get-volume-human

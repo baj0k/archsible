@@ -1,0 +1,57 @@
+!st
+st.alpha: 0.83
+st.font: Liberation Mono-15:autohint=true;
+st.fontalt: DejaVu Sans Mono-14:antialias=true:autohint=true;
+st.background: #010101
+st.foreground: #DBD3C4
+st.cursorColor: #34E2E2
+st.rcursorColor: #AD7FA8
+st.cursorShape: 4
+st.borderpx: 0
+st.selbg: #262626
+st.selfg: #AD7FA8
+
+!dmenu
+dmenu.font: DejaVu Sans Mono-18:antialias=true:autohint=true;
+dmenu.background: #020202
+dmenu.foreground: #00FFFF
+dmenu.selbackground: #000000
+dmenu.selforeground:#C4A000
+
+
+!fallback
+*.background: #000000
+*.foreground: #DFDFDF
+
+!onyx
+*.color0:  #252a2c 
+!red
+*.color1:  #CC0000
+!shrek
+*.color2:  #4E9A06
+!orange
+*.color3:  #C4A000
+!blue
+*.color4:  #3465A4
+!fuchsia
+*.color5:  #75507B
+!tiffany
+*.color6:  #06989A
+!peach
+*.color7:  #D3D7CF
+!brown
+*.color8:  #555753
+!rust
+*.color9:  #B7410E
+!lime
+*.color10: #8AE234
+!yellow
+*.color11: #FCE94F
+!lavender
+*.color12: #729FCF
+!pink
+*.color13: #AD7FA8
+!cyan
+*.color14: #34E2E2
+!white
+*.color15: #EEEEEC

@@ -1,0 +1,12 @@
+- name: Ranger - Install packages
+  become: yes
+  package:
+    name: 
+      - ueberzug
+    state: present
+
+- name: Ranger - Symlink configuration
+  file:
+    src: "{{ ansible_env.PWD }}/files/ranger"
+    path: "~/.config/ranger"
+    state: link

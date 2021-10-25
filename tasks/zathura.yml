@@ -1,0 +1,12 @@
+- name: Zathura - Install packages
+  become: yes
+  package:
+    name: 
+      - zathura-pdf-mupdf
+    state: present
+
+- name: Zathura - Symlink configuration
+  file:
+    src: "{{ ansible_env.PWD }}/files/zathura"
+    path: "~/.config/zathura"
+    state: link

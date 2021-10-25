@@ -1,0 +1,12 @@
+- name: Newsboat - Install packages
+  become: yes
+  package:
+    name: 
+      - newsboat
+    state: present
+
+- name: Newsboat - Symlink configuration
+  file:
+    src: "{{ ansible_env.PWD }}/files/newsboat"
+    path: "~/.config/newsboat"
+    state: link

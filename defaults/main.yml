@@ -1,2 +1,23 @@
-nvim: true
+# System configuration
+aur: true
+blackarch: true
+bluetooth: true
+bluetooth_dongle: true
+
+# Software configuration
+abook: false
+dunst: false
+firefox: false
+i3: false
+mpd: false
+mpv: false
+mutt: false
+ncmpcpp: false
+neofetch: false
+newsboat: false
+nvim: false
+ranger: false
 suckless: false
+tmux: false
+zathura: false
+zsh: false

@@ -1,0 +1,34 @@
+- name: prelim - Create workspace directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "~/.cache"
+    - "~/.config"
+    - "~/.local"
+    - "~/ctf"
+    - "~/downloads"
+    - "~/fieldwork"
+    - "~/music"
+    - "~/pictures"
+    - "~/repos"
+    - "~/tmp"
+    - "~/videos"
+
+- name: prelim - Symlink user-dirs.dirs
+  file:
+    src: "{{ ansible_env.PWD }}/files/user-dirs.dirs"
+    path: "~/.config/user-dirs.dirs"
+    state: link
+
+- name: prelim - Symlink locale.conf
+  file:
+    src: "{{ ansible_env.PWD }}/files/locale.conf"
+    path: "~/.config/locale.conf"
+    state: link
+
+- name: prelim - Symlink local scripts
+  file:
+    src: "{{ ansible_env.PWD }}/files/bin"
+    path: "~/.local/bin"
+    state: link

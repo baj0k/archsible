@@ -1,0 +1,14 @@
+#!/bin/sh
+
+screen=$(printf "left\ncenter\nright" | dmenu -i -p "Select screen:")
+
+case "${screen}" in
+    left) ;;
+    center) offset="${DISPLAY}+1920x1080" ;;
+    right) offset="${DISPLAY}+3840x2160" ;;
+    *) exit 0 ;;
+esac
+
+filename="$(date +%F_%T)"
+ffmpeg -y -nostats -loglevel 0 -f x11grab -video_size "1920x1080" -i "${offset}" -vframes 1 "/tmp/screenshot-${filename}.png"
+cat "/tmp/screenshot-${filename}.png" | xclip -selection c -t image/png

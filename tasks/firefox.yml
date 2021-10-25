@@ -1,0 +1,17 @@
+- name: Firefox - Install packages
+  become: yes
+  package:
+    name: 
+      - firefox
+    state: present
+
+      #- name: Firefox - Create directories
+      #  file:
+      #    path: "~/.config/nvim"
+      #    state: directory
+      #
+      #- name: Firefox - Symlink configuration
+      #  file:
+      #    src: "{{ ansible_env.PWD }}/files/nvim/init.vim"
+      #    path: "~/.config/nvim/init.vim"
+      #    state: link

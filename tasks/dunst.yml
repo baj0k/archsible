@@ -1,0 +1,13 @@
+- name: Dunst - Install packages
+  become: yes
+  package:
+    name: 
+      - dunst
+      - libnotify
+    state: present
+
+- name: Dunst - Symlink configuration
+  file:
+    src: "{{ ansible_env.PWD }}/files/dunst"
+    path: "~/.config/dunst"
+    state: link

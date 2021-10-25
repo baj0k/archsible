@@ -1,0 +1,12 @@
+- name: Ncmpcpp - Install packages
+  become: yes
+  package:
+    name: 
+      - ncmpcpp
+    state: present
+
+- name: Ncmpcpp - Symlink configuration
+  file:
+    src: "{{ ansible_env.PWD }}/files/ncmpcpp"
+    path: "~/.config/ncmpcpp"
+    state: link

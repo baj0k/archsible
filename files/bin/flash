@@ -1,0 +1,4 @@
+#!/bin/sh
+
+game=$(find "${HOME}/games/flash/" -name "*.swf" | sed 's/.swf$//' | dmenu -l 8 -p "Select game:" "$@")
+[ -f "${HOME}/games/flash/${game}" ] && setsid nohup flashplayer "${HOME}/games/flash/${game}" > /tmp/flashpnohup.out 2>&1;

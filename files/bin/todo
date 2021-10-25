@@ -1,0 +1,19 @@
+#!/bin/sh
+
+TODO="${XDG_DATA_HOME:?}/personal/todo"
+TEMP=/tmp/todo.tmp
+
+[ $# -eq 0 ] && nl -n ln < "${TODO}" && exit 0
+
+case "$1" in
+add)
+	shift
+	echo "$@" >> "${TODO}"
+	nl -n ln < "${TODO}" ;;
+rm)
+	shift
+	sed "$1d" < "${TODO}" > "${TEMP}" && mv "${TEMP}" "${TODO}"
+	nl -n ln < "${TODO}" ;;
+*)
+	printf "\033[0mUsage: %s add [text] | rm [n]\n" "$(basename "$0")" ;;
+esac
