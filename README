@@ -1,3 +1,33 @@
-archsible - ansible playbook for the post configuration process of my archlinux desktop.
+archsible - ansible playbooks designed to ease and automate arch linux environment maintenance across multiple machines
 
-This playbook is designed to install my dotfiles and configure freshly installed archlinux desktop.
+Playbooks in this repository are designed to ease the installation, configuration and hardening of the fresh arch linux OS
+
+# Features
+- Full disk encryption
+- my dotfiles
+
+# Prerequisites
+- UEFI support enabled
+- Secure Boot disabled
+
+# Installation
+- Boot the installation medium
+- Set root password:
+$ passwd
+- Start the ssh service:
+$ systemctl restart sshd
+
+
+# Full disk encryption
+This setup utilizes the LVM on LUKS scenario using a single physical disk with two partitions.
+The efi partition stores the encrypted bootloader and requires a passphrase to be unlocked. 
+The luks partition stores an encrypted LUKS1 container (GRUB doesn't yet support some of the LUKS2 features) and requires passphrase to be unlocked (the goal is to use a key file stored in initramfs for encryption - future release)
+
+How it works:
+After the machine is powered on, the boot loader (GRUB) asks for a passphrase to be unlocked.
+The boot partition contains the kernel image and the initramfs used to bring up the rest of the system. In the initramfs, the unencrypted random key is stored and after unlocking the boot partition the key is automatically used to unlock the LUKS container on the other partition.
+
+Security considerations:
+- User is required to enter their password only once during the boot process.
+- Randomness and length of the key makes it resistant to bruteforce and dictionary attacks.
+- If the kernel image is kept with tight permissions (600 root:root) the only possibility for the attacker to obtain the decryption key is to gain root privileges on the running system and read it from the boot partition at which point the system already was entirely compromised.

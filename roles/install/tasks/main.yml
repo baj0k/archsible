@@ -1,0 +1,247 @@
+# TODO: Change to luks2 format when grub start fully supporting it
+#
+#    - name: debug
+#      debug:
+#        msg: '{{ partitions.stdout_lines[0] }}'
+#
+#    - name: Add tmp volume to crypttab
+#      crypttab:
+#        path: /mnt/etc/crypttab
+#        backing_device: /dev/vg/tmp
+#        name: tmp
+#        password: /dev/urandom
+#        opts: tmp,cipher=aes-xts-plain64,size=512
+#        state: present
+#
+# TODO: check if possible to gather facts during execution (disk wise) and use it instead of registering UUIDs
+# TODO: add prelim checks: verify the boot mode (EFI) and check internet connection
+# TODO: add post execution (handlers?) tasks: add hook to reboot after done 
+#
+# TODO: add volumes for /var /tmp /var/log and others if needed (see current cis recommendations)
+# TODO: change task based on shell / command module to use dedicated modules where possible
+# TODO: fix the luks_device pbkdf2 iteration count for optimal security / speed
+#
+# TASKS when implementing key encrypted in initramfs:
+# TODO: automatic random key generation for luks
+# TODO: change luks container to be created using keyfile instead of passphrase
+
+- name: Update the system clock
+  command: timedatectl set-ntp true
+
+- name: Partition the disks
+  tags: test
+  block:
+    - name: Erase GPT structures from the disk
+      command: sgdisk -Z '{{ drive }}'
+
+    - name: Create EFI partition
+      command: sgdisk -n 1:0:551M -c 1:BOOT -t 1:ef00 '{{ drive }}'
+
+    - name: Create LUKS partition
+      command: sgdisk -n 0:0:0 -c 0:LUKS -t 0:8309 '{{ drive }}'
+
+    - name: Register paths of the new partitions
+      shell: 'lsblk {{ drive }} -nlpo NAME | tail -n +2'
+      register: partitions
+    
+- name: Setup LVM on LUKS
+  tags: test
+  block:
+    - name: Setup LUKS container
+      luks_device:
+        device: '{{ partitions.stdout_lines[1] }}'
+        passphrase: '{{ luks_password }}'
+        type: luks1
+        #pbkdf:
+        #  iteration_count: 999999999
+        name: cryptlvm
+        state: opened
+
+    - name: Setup physical volume and the volume group
+      lvg:
+        vg: vg
+        pvs: /dev/mapper/cryptlvm
+
+    - name: Setup logical volumes
+      lvol:
+        vg: '{{ item.vg }}'
+        lv: '{{ item.lv }}'
+        size: '{{ item.size }}'
+      loop:
+        - {vg: vg, lv: swap, size: 16G}
+        - {vg: vg, lv: root, size: 30G}
+        - {vg: vg, lv: home, size: 100%FREE}
+                
+- name: Format the partitions
+  tags: test
+  filesystem:
+    dev: '{{ item.dev }}'
+    fstype: '{{ item.fstype }}'
+    opts: '{{ item.opts }}'
+    force: yes
+  loop:
+    - {dev: '{{ partitions.stdout_lines[0] }}', fstype: vfat, opts: -F32}
+    - {dev: /dev/mapper/vg-swap, fstype: swap, opts: }
+    - {dev: /dev/mapper/vg-root, fstype: ext4, opts: }
+    - {dev: /dev/mapper/vg-home, fstype: ext4, opts: }
+
+- name: Mount the file systems
+  block:
+    - name: Register UUIDs of the partitions and volumes
+      command: "blkid -s UUID -o value {{ item }}"
+      loop:
+        - /dev/nvme0n1p1
+        - /dev/nvme0n1p2
+        - /dev/vg/root
+        - /dev/vg/home
+        - /dev/vg/swap
+      register: uuid
+
+    - name: Enable swap volume
+      command: swapon -U "{{ uuid.results[4].stdout }}"
+
+    - name: Mount logical volumes
+      mount:
+        path: '{{ item.path }}'
+        src: 'UUID={{ item.uuid }}'
+        fstype: '{{ item.fs }}'
+        state: mounted
+        passno: '{{ item.passno }}'
+      loop:
+        - {path: /mnt, uuid: '{{ uuid.results[2].stdout }}', fs: ext4, passno: 1}
+        - {path: /mnt/efi, uuid: '{{ uuid.results[0].stdout }}', fs: vfat, passno: 2}
+        - {path: /mnt/home, uuid: '{{ uuid.results[3].stdout }}', fs: ext4, passno: 2}
+
+# TODO: optimal mirror selection task
+- name: Install essential packages
+  command:
+    argv:
+      - pacstrap
+      - /mnt 
+      - base
+      - linux
+      - linux-firmware
+      - lvm2
+      - efibootmgr
+      - grub
+      - intel-ucode
+      - openssh
+      - python
+      - sudo
+      - vim
+
+- name: Generate the /etc/fstab file
+  shell: genfstab -U /mnt > /mnt/etc/fstab
+
+- name: Time zone
+  block:
+    - name: Set the timezone
+      command: arch-chroot /mnt ln -sf /usr/share/zoneinfo/Europe/Warsaw /etc/localtime
+    
+    - name: Set the Hardware Clock from the System Clock
+      command: arch-chroot /mnt hwclock --systohc
+
+- name: Localization
+  block:
+    - name: Setup locales
+      block:
+        - name: Configure locale.gen
+          lineinfile:
+            dest: /mnt/etc/locale.gen
+            regexp: '{{ item.regex }}'
+            line: '{{ item.line }}'
+          loop:
+            - {regex: en_US\.UTF-8 UTF-8, line: en_US.UTF-8 UTF-8}
+            - {regex: pl_PL\.UTF-8 UTF-8, line: pl_PL.UTF-8 UTF-8}
+    
+        - name: Generate locales
+          command: arch-chroot /mnt locale-gen
+    
+        - name: Create locale.conf
+          lineinfile:
+            create: yes
+            dest: /mnt/etc/locale.conf
+            regexp: LANG=en_US\.UTF-8
+            line: LANG=en_US.UTF-8
+    
+        - name: Create vconsole.conf
+          lineinfile:
+            create: yes
+            dest: /mnt/etc/vconsole.conf
+            line: '{{ item }}'
+          loop:
+            - KEYMAP=pl
+            - FONT=Lat2-Terminus16
+            - FONT_MAP=8859-2
+
+- name: Localization
+  block:
+    - name: Set hostname
+      lineinfile:
+        create: yes
+        dest: /mnt/etc/hostname
+        line: '{{ hostname }}'
+
+- name: Initramfs
+  block:
+    - name: Add mkinitcpio.conf hooks
+      lineinfile:
+        dest: /mnt/etc/mkinitcpio.conf
+        regexp: ^HOOKS=
+        line: HOOKS=(base udev autodetect keyboard keymap modconf block encrypt lvm2 filesystems fsck)
+
+    - name: Create new initramfs
+      command: arch-chroot /mnt mkinitcpio -p linux
+
+- name: Boot loader
+  block:
+    - name: Set cryptdevice kernel parameter
+      lineinfile:
+        dest: /mnt/etc/default/grub
+        regexp: GRUB_CMDLINE_LINUX=
+        line: GRUB_CMDLINE_LINUX="cryptdevice=UUID={{ uuid.results[1].stdout }}:cryptlvm resume=/dev/vg/swap"
+          #line: GRUB_CMDLINE_LINUX="cryptdevice=UUID={{ uuid.results[1].stdout }}:cryptlvm root=/dev/vg/root resume=/dev/vg/swap"
+
+# TODO check if root= is necessary
+    
+    - name: Set cryptdevice kernel parameter 2
+      lineinfile:
+        dest: /mnt/etc/default/grub
+        regexp: GRUB_ENABLE_CRYPTODISK=
+        line: GRUB_ENABLE_CRYPTODISK=y
+    
+    - name: Configure grub
+      command: arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
+
+    - name: Generate grub config
+      command: arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
+
+- name: Set root password
+  command: arch-chroot /mnt usermod -p "{{ root_password | password_hash('sha512') }}" root
+
+# TODO: add user
+
+        # - name: Create user's ssh directory
+        #   file:
+        #     path: /mnt/home/{{ user_name }}/.ssh
+        #     state: directory
+        # - name: Set mode, owner, and group on user's ssh directory
+        #   command: arch-chroot /mnt {{ item }}
+        #   loop:
+        #     - chmod 0700 /home/{{ user_name }}/.ssh
+        #     - chown {{ user_name }}:{{ user_name }} /home/{{ user_name }}/.ssh
+        # - name: Copy over ssh key from current Ansible controller as an authorized key
+        #   copy:
+        #     src: '{{ lookup("env", "HOME") }}/.ssh/id_ed25519.pub'
+        #     dest: /mnt/home/{{ user_name }}/.ssh/authorized_keys
+        # - name: Set mode, owner, and group on user's authorized_key file
+        #   command: arch-chroot /mnt {{ item }}
+        #   loop:
+        #     - chmod 0600 /home/{{ user_name }}/.ssh/authorized_keys
+        #     - chown {{ user_name }}:{{ user_name }} /home/{{ user_name }}/.ssh/authorized_keys
+
+    #- name: Give passwordless sudo access to wheel group
+    #  copy:
+    #    content: '%wheel ALL=(ALL) NOPASSWD: ALL'
+    #    dest: /mnt/etc/sudoers.d/wheel
+    #    validate: /usr/sbin/visudo --check --file=%s
