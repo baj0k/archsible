@@ -3,7 +3,7 @@
   package:
     name: 
       - mpv
-      - youtube-dl
+      - yt-dlp
     state: present
 
 - name: Mpv - Symlink configuration

@@ -16,4 +16,6 @@
       - burpsuite
       - gobuster
       - nmap
+      - gtfo
+      - msfdb #metasploit in separate task?
     state: present

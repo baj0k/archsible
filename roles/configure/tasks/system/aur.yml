@@ -1,0 +1,8 @@
+#- name: AUR - Install AUR packages
+#  aur:
+#    name: 
+#      - pikaur
+#      - neovim-git
+#      - birdtray
+#    use: makepkg
+#    state: present

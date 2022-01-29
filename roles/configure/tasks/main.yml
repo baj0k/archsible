@@ -1,8 +1,20 @@
 # System configuration
+
+- include: install.yml
+  when: install
+
 - include: prelim.yml
+  when: system
 
 - include: system/system.yml
+  when: system
   become: yes
+
+- include: system/user.yml
+  when: user
+
+- include: system/aur.yml
+  when: aur
 
 - include: system/blackarch.yml
   when: blackarch
@@ -15,6 +27,9 @@
   when: abook
 
 - include: dunst.yml
+  when: dunst
+
+- include: docker.yml
   when: dunst
 
 - include: firefox.yml

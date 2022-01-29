@@ -1,12 +1,17 @@
 # System configuration
-aur: true
-blackarch: true
-bluetooth: true
+install: true
+system: false
+user: false
+aur: false
+blackarch: false
+bluetooth: false
+
 bluetooth_dongle: true
 
 # Software configuration
 abook: false
 dunst: false
+docker: false
 firefox: false
 i3: false
 mpd: false

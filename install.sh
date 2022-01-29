@@ -29,6 +29,8 @@
 #    esac
 #done
 
-ansible-galaxy collection install kewlfft.aur
-rsync -av -e ssh --exclude='.git' $(whoami)@desktop:/home/$(whoami)/fieldwork/archsible ~/
+mkdir -p ~/.ansible/plugins/modules
+curl -o ~/.ansible/plugins/modules/aur.py https://raw.githubusercontent.com/kewlfft/ansible-aur/master/plugins/modules/aur.py
+
+rsync -av -e ssh --exclude='.git' $(whoami)@desktop:/home/$(whoami)/repos/archsible ~/
 ansible-playbook -i hosts main.yml -vv

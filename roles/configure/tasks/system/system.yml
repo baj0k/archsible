@@ -23,13 +23,13 @@
     state: link
     force: yes
 
-- name: AUR - Install AUR helper
-  become: no
-  kewlfft.aur.aur:
-    name: pikaur
-    use: makepkg
+- name: System - Sudoers NOPASSWD for the wheel group.
+  lineinfile:
+    path: /etc/sudoers
     state: present
-  when: aur
+    regexp: '%wheel ALL='
+    line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
 
 - name: System - Update system
   pacman:
@@ -58,3 +58,15 @@
       - ttf-dejavu
       - ttf-font-awesome
     state: present
+
+      #- name: AUR - Install AUR packages
+      #  become: no
+      #  aur:
+      #    name: 
+      #      - pikaur
+      #      - neovim-git
+      #      - girara-git
+      #      - zathura-git
+      #    use: makepkg
+      #    state: present
+      #  when: aur
