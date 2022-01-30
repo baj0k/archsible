@@ -1,8 +1,6 @@
 # System configuration
 install: true
 system: false
-user: false
-aur: false
 blackarch: false
 bluetooth: false
 

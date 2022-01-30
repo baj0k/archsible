@@ -15,19 +15,20 @@ Playbooks in this repository are designed to ease the installation, configuratio
 - Set root password:
 $ passwd
 - Start the ssh service:
-$ systemctl restart sshd
+$ systemctl start sshd
 
 
 # Full disk encryption
 This setup utilizes the LVM on LUKS scenario using a single physical disk with two partitions.
-The efi partition stores the encrypted bootloader and requires a passphrase to be unlocked. 
-The luks partition stores an encrypted LUKS1 container (GRUB doesn't yet support some of the LUKS2 features) and requires passphrase to be unlocked (the goal is to use a key file stored in initramfs for encryption - future release)
+The efi partition is unencrypted and stores the bootloader binary (GRUB) which requires a passphrase to be executed. 
+The luks partition stores an encrypted LUKS1 container (GRUB doesn't yet support some of the LUKS2 features) which is decrypted automatically with the key embedded in the initramfs called by the bootloader.
 
 How it works:
-After the machine is powered on, the boot loader (GRUB) asks for a passphrase to be unlocked.
-The boot partition contains the kernel image and the initramfs used to bring up the rest of the system. In the initramfs, the unencrypted random key is stored and after unlocking the boot partition the key is automatically used to unlock the LUKS container on the other partition.
+After the machine is powered on, the bootloader (GRUB) asks for a passphrase to be unlocked and executed.
+Bootloader takes the kernel image and the initramfs which are used to bring up the rest of the system. In the initramfs, the path to the unencrypted keyfile is stored which allows automatic decryption of the luks container during boot.
 
 Security considerations:
+- With an encrypted boot partition, there is no option to modify user's kernel image or initramfs, but it would be still vulnerable to Evil Maid attacks. (TODO: possible prevention - use UEFI secure boot to sign the bootloader with user's own keys)
 - User is required to enter their password only once during the boot process.
 - Randomness and length of the key makes it resistant to bruteforce and dictionary attacks.
-- If the kernel image is kept with tight permissions (600 root:root) the only possibility for the attacker to obtain the decryption key is to gain root privileges on the running system and read it from the boot partition at which point the system already was entirely compromised.
+- If the plaintext keyfile is kept with tight permissions (600 root:root) the only possibility for the attacker to obtain the decryption key is to gain root privileges on the running system at which point the system has already been fully compromised.

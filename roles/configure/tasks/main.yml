@@ -10,12 +10,6 @@
   when: system
   become: yes
 
-- include: system/user.yml
-  when: user
-
-- include: system/aur.yml
-  when: aur
-
 - include: system/blackarch.yml
   when: blackarch
 
