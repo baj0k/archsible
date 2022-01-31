@@ -1,5 +1,60 @@
 ---
 - hosts: workstations
+  remote_user: root
+  vars:
+    # Timezone configuration
+    region: Europe
+    city: Warsaw
+
+    # Selecting mirrors and locale
+    country: PL
+
+    # Which drive to use
+    drive: /dev/nvme0n1
+
+    # Self explanatory
+    luks_password: test
+    hostname: TEST
+    root_password: test
+    user_username: test
+    user_password: test
+
+# TODO: consider moving pre and post tasks to separate files after implementing the shred task
+  pre_tasks:
+    - name: Verify the UEFI boot mode
+      stat:
+        path: /sys/firmware/efi/efivars
+      register: efivars
+      failed_when: efivars.stat.isdir is not defined
+
+    - name: Check internet connection
+      command: ping -c 1 -w 1 google.com
+      changed_when: False
+
+# TODO: Remove after implementing shred task
+    - name: Remove existing data
+      block:
+        - name: Remove the volume group and physical volume
+          lvg:
+            vg: vg
+            pvs: /dev/mapper/cryptlvm
+            state: absent
+            force: yes
+    
+        - name: Remove the LUKS container
+          luks_device:
+            name: cryptlvm
+            state: absent
+    
+        - name: Erase GPT structures from the disk
+          command: sgdisk -Z '{{ drive }}'
+
   roles:
     - install
-
+  
+  post_tasks:
+    - name: Reboot after installation is complete
+      shell: sleep 2 && reboot
+      async: 5
+      poll: 0
+    - meta: end_host

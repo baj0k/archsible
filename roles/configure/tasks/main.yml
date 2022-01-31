@@ -67,3 +67,6 @@
 
 - include: zsh.yml
   when: zsh
+
+# TODO: fix sb makefiles to cleanup after installation
+# TODO: check docker setup

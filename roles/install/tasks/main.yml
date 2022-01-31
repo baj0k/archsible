@@ -2,25 +2,25 @@
 #
 #    - name: debug
 #      debug:
-#        msg: '{{ partitions.stdout_lines[0] }}'
+#        msg: '{{ lsblk.stdout_lines[0] }}'
+#
+# TODO: possible prevention - use UEFI secure boot to sign the bootloader with user's own keys
 #
 # TODO: check if possible to gather facts during execution (disk wise) and use it instead of registering UUIDs
-# TODO: add prelim checks: verify the boot mode (EFI) and check internet connection
-# TODO: add post execution (handlers?) tasks: add hook to reboot after done 
 #
-# TODO: add volumes for /var /tmp /var/log and others if needed (see current cis recommendations)
-#       10GB for var, 5G for /var/log 1-2G for /var/tmp? (if separate it at all)
-# TODO: change task based on shell / command module to use dedicated modules where possible
-# TODO: fix the luks_device pbkdf2 iteration count for optimal security / speed
+# TODO: add when: conditions on executing some tasks (like wred / wireless interface configuration)
+# TODO: Add optional disk shred task before partitioning
+#
 
 - name: Update the system clock
   command: timedatectl set-ntp true
 
+- name: Set timezone
+  timezone:
+    name: '{{ region }}/{{ city }}'
+
 - name: Partition the disks
   block:
-    - name: Erase GPT structures from the disk
-      command: sgdisk -Z '{{ drive }}'
-
     - name: Create EFI partition
       command: sgdisk -n 1:0:551M -c 1:BOOT -t 1:ef00 '{{ drive }}'
 
@@ -28,18 +28,18 @@
       command: sgdisk -n 0:0:0 -c 0:LUKS -t 0:8309 '{{ drive }}'
 
     - name: Register paths of the new partitions
-      shell: 'lsblk {{ drive }} -nlpo NAME | tail -n +2'
-      register: partitions
+      command: 'lsblk {{ drive }} -nlpo NAME'
+      register: lsblk
     
 - name: Setup LVM on LUKS
   block:
     - name: Setup LUKS container
       luks_device:
-        device: '{{ partitions.stdout_lines[1] }}'
+        device: '{{ lsblk.stdout_lines[2] }}'
         passphrase: '{{ luks_password }}'
         type: luks1
-        #pbkdf:
-        #  iteration_count: 999999999
+        pbkdf: 
+          iteration_count: 420997
         name: cryptlvm
         state: opened
 
@@ -47,15 +47,20 @@
       lvg:
         vg: vg
         pvs: /dev/mapper/cryptlvm
+        force: yes
 
     - name: Setup logical volumes
       lvol:
         vg: '{{ item.vg }}'
         lv: '{{ item.lv }}'
         size: '{{ item.size }}'
+        force: yes
       loop:
         - {vg: vg, lv: swap, size: 16G}
         - {vg: vg, lv: root, size: 30G}
+        - {vg: vg, lv: var, size: 10G}
+        - {vg: vg, lv: varlog, size: 5G}
+        - {vg: vg, lv: vartmp, size: 2G}
         - {vg: vg, lv: home, size: 100%FREE}
                 
 - name: Format the partitions
@@ -65,10 +70,13 @@
     opts: '{{ item.opts }}'
     force: yes
   loop:
-    - {dev: '{{ partitions.stdout_lines[0] }}', fstype: vfat, opts: -F32}
+    - {dev: '{{ lsblk.stdout_lines[1] }}', fstype: vfat, opts: -F32}
     - {dev: /dev/mapper/vg-swap, fstype: swap, opts: }
     - {dev: /dev/mapper/vg-root, fstype: ext4, opts: }
     - {dev: /dev/mapper/vg-home, fstype: ext4, opts: }
+    - {dev: /dev/mapper/vg-var, fstype: ext4, opts: }
+    - {dev: /dev/mapper/vg-varlog, fstype: ext4, opts: }
+    - {dev: /dev/mapper/vg-vartmp, fstype: ext4, opts: }
 
 - name: Mount the file systems
   block:
@@ -80,6 +88,9 @@
         - /dev/vg/root
         - /dev/vg/home
         - /dev/vg/swap
+        - /dev/vg/var
+        - /dev/vg/varlog
+        - /dev/vg/vartmp
       register: uuid
 
     - name: Enable swap volume
@@ -96,20 +107,53 @@
         - {path: /mnt, uuid: '{{ uuid.results[2].stdout }}', fs: ext4, passno: 1}
         - {path: /mnt/efi, uuid: '{{ uuid.results[0].stdout }}', fs: vfat, passno: 2}
         - {path: /mnt/home, uuid: '{{ uuid.results[3].stdout }}', fs: ext4, passno: 2}
+        - {path: /mnt/var, uuid: '{{ uuid.results[5].stdout }}', fs: ext4, passno: 2}
+        - {path: /mnt/var/log, uuid: '{{ uuid.results[6].stdout }}', fs: ext4, passno: 2}
+        - {path: /mnt/var/tmp, uuid: '{{ uuid.results[7].stdout }}', fs: ext4, passno: 2}
 
-# TODO: optimal mirror selection task
-- name: Install essential packages
-  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub intel-ucode
-
-- name: Generate the /etc/fstab file
-  shell: genfstab -U /mnt > /mnt/etc/fstab
-
-- name: Time zone
+- name: Select optimal pacman mirrors
   block:
-    - name: Set the timezone
-      command: arch-chroot /mnt ln -sf /usr/share/zoneinfo/Europe/Warsaw /etc/localtime
+    - name: Select optimal pacman mirrors - Download mirrorlist
+      uri: 
+        url: 'https://archlinux.org/mirrorlist/?country={{ country }}&ip_version=4&use_mirror_status=on'
+        return_content: yes
+      register: mirrorlist
     
-    - name: Set the Hardware Clock from the System Clock
+    - name: Select optimal pacman mirrors - Save output to file
+      copy:
+        content: '{{ mirrorlist.content }}'
+        dest: /etc/pacman.d/mirrorlist
+    
+    - name: Select optimal pacman mirrors - Uncomment mirrors
+      replace:
+        path: /etc/pacman.d/mirrorlist
+        regexp: \#Server
+        replace: Server
+
+- name: Install essential packages
+  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub intel-ucode openssh python sudo
+
+- name: Generate fstab
+  block:
+    - name: Generate fstab - run command
+      command: genfstab -U /mnt
+      register: fstab
+    
+    - name: Generate fstab - Save output to file
+      copy:
+        content: '{{ fstab.stdout }}'
+        dest: /mnt/etc/fstab
+
+# TODO: move below block to post-configuration playbook
+- name: Configure timezone
+  block:
+    - name: Set the timezone for system clock
+      file:
+        src: '/mnt/usr/share/zoneinfo/{{ region }}/{{ city }}'
+        dest: /etc/localtime
+        state: link
+    
+    - name: Synchronize the Hardware Clock with the System Clock
       command: arch-chroot /mnt hwclock --systohc
 
 - name: Localization
@@ -121,7 +165,7 @@
         line: '{{ item.line }}'
       loop:
         - {regex: en_US\.UTF-8 UTF-8, line: en_US.UTF-8 UTF-8}
-        - {regex: pl_PL\.UTF-8 UTF-8, line: pl_PL.UTF-8 UTF-8}
+        - {regex: '{{ country }}\.UTF-8 UTF-8', line: '{{ country|lower }}_{{ country }}.UTF-8 UTF-8'}
     
     - name: Generate locales
       command: arch-chroot /mnt locale-gen
@@ -134,14 +178,13 @@
         line: LANG=en_US.UTF-8
     
     - name: Create vconsole.conf
-      lineinfile:
+      blockinfile:
         create: yes
         dest: /mnt/etc/vconsole.conf
-        line: '{{ item }}'
-      loop:
-        - KEYMAP=pl
-        - FONT=Lat2-Terminus16
-        - FONT_MAP=8859-2
+        block: |
+          'KEYMAP={{ country|lower }}'
+          FONT=Lat2-Terminus16
+          FONT_MAP=8859-2
 
     - name: Set hostname
       lineinfile:
@@ -158,18 +201,20 @@
         mode: 0700
 
     - name: Generate random LUKS keyfile
-      shell: dd bs=512 count=8 if=/dev/random of=/mnt/root/secrets/luks-crypt.bin iflag=fullblock
+      command: dd bs=512 count=8 if=/dev/random of=/mnt/root/secrets/luks-crypt.bin iflag=fullblock
 
     - name: Change LUKS keyfile permissions
       file:
         path: /mnt/root/secrets/luks-crypt.bin
-        mode: 0600
+        mode: 0000
 
     - name: Add keyfile to the LUKS container
       luks_device:
-        device: '{{ partitions.stdout_lines[1] }}'
+        device: '{{ lsblk.stdout_lines[2] }}'
         passphrase: '{{ luks_password }}'
         new_keyfile: /mnt/root/secrets/luks-crypt.bin
+        pbkdf: 
+          iteration_count: 420997
 
 - name: Generate initramfs
   block:
@@ -193,7 +238,8 @@
         regexp: '{{ item.regex }}'
         line: '{{ item.line }}'
       loop:
-        - {regex: GRUB_CMDLINE_LINUX=, line: 'GRUB_CMDLINE_LINUX="cryptdevice=UUID={{ uuid.results[1].stdout }}:cryptlvm resume=/dev/vg/swap cryptkey=rootfs:/root/secrets/luks-crypt.bin"'}
+        - {regex: GRUB_CMDLINE_LINUX=, line: 'GRUB_CMDLINE_LINUX="cryptdevice=UUID={{ uuid.results[1].stdout }}:cryptlvm resume=UUID={{ uuid.results[1].stdout }} cryptkey=rootfs:/root/secrets/luks-crypt.bin"'}
+        - {regex: GRUB_CMDLINE_LINUX_DEFAULT=, line: 'GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet net.ifnames=0"'}
         - {regex: GRUB_ENABLE_CRYPTODISK=, line: GRUB_ENABLE_CRYPTODISK=y}
 
     - name: Configure grub
@@ -209,10 +255,69 @@
         mode: 0700
 
 - name: Post configuration
-  tags: post
   block:
+    - name: Enable network services
+      command: arch-chroot /mnt systemctl enable systemd-networkd systemd-resolved sshd
+
+    - name: Configure wired adapter
+      blockinfile: 
+        path: /mnt/etc/systemd/network/20-wired.network
+        create: true
+        block: |
+          [Match]
+          Name=eth0
+
+          [Network]
+          DHCP=yes
+
+          [DHCPv4]
+          RouteMetric=10
+
+    - name: Configure wireless adapter
+      blockinfile: 
+        path: /mnt/etc/systemd/network/25-wireless.network
+        create: true
+        block: |
+          [Match]
+          Name=wlan0
+          
+          [Network]
+          DHCP=yes
+          
+          [DHCPv4]
+          RouteMetric=20
+
     - name: Set root password
       command: arch-chroot /mnt usermod -p "{{ root_password | password_hash('sha512') }}" root
 
+    - name: Give passwordless sudo access to the wheel group members
+      lineinfile:
+        path: /mnt/etc/sudoers
+        state: present
+        regexp: '%wheel ALL='
+        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+        validate: '/usr/sbin/visudo --check --file=%s'
+
+    - name: Create user with sudo permissions
+      command: arch-chroot /mnt useradd -m -G wheel -p "{{ user_password | password_hash('sha512') }}" "{{ user_username }}"
+ 
+# TODO: consider moving to separate role
+- name: Post hardening
+  block:
     - name: Install additional packages
-      command: arch-chroot /mnt pacman -S openssh python sudo
+      pacman:
+        update_cache: yes
+        name:
+          - efitools
+        state: present
+
+    - name: Protect against Evil Maid attacks
+      block:
+        - name: Create a GUID for key owner identification - Generate GUID
+          command: uuidgen --random
+          register: guid
+
+        - name: Create a GUID for key owner identification - Save output to file
+          copy:
+            content: '{{ guid.stdout }}'
+            dest: /root/GUID.txt
