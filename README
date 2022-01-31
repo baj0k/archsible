@@ -10,12 +10,15 @@ Playbooks in this repository are designed to ease the installation, configuratio
 - UEFI support enabled
 - Secure Boot disabled
 
-# Installation
-- Boot the installation medium
-- Set root password:
+# Usage
+- Modify hosts file according to your needs
+- Change default values of the variables inside the playbook files
+- Boot the installation medium and execute following commands on the live system:
 $ passwd
-- Start the ssh service:
 $ systemctl start sshd
+
+Run the install.yml playbook with:
+$ ansible-playbook install.yml -i hosts --ask-pass
 
 
 # Full disk encryption
@@ -32,4 +35,4 @@ Security considerations:
 - User is required to enter their password only once during the boot process.
 - Randomness and length of the key makes it resistant to brute force and dictionary attacks.
 - If the plain text key is kept with tight permissions (000 root:root) the only possibility for the attacker to obtain the decryption key is to gain root privileges on the running system at which point the system has already been fully compromised.
-- GRUB doesn't yet support some of the LUKS 2 format features so the setup is using LUKS 1 format 
+- GRUB doesn't yet support some of the LUKS 2 format features so the setup utilizes LUKS 1
