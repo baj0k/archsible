@@ -1,0 +1,11 @@
+#!/bin/sh
+
+[ -n "${BLOCK_BUTTON}" ] && case "${BLOCK_BUTTON}" in
+    1) redshift -O 2500 > /dev/null 2>&1 ;; # left click, enable redshift
+    2) xbacklight 0 ;; # middle click, set 0
+    3) xbacklight 100 && redshift -P -O 5500 > /dev/null 2>&1 ;; # right click, reset
+    4) xbacklight +5 ;; # scroll up, increase
+    5) if [ "$(xbacklight -get)" -lt 6 ];then xbacklight 1;else xbacklight -5;fi ;; # scroll down, decrease
+    *) ;;
+esac
+xbacklight -get

@@ -1,0 +1,34 @@
+- name: Suckless-builds - Clone repository
+  git:
+    repo: https://github.com/baj0k/SB.git
+    dest: ~/repos/suckless-builds
+
+- name: Suckless-builds - Install dmenu
+  become: yes
+  make:
+    chdir: "/home/{{ ansible_user_id }}/repos/suckless-builds/dmenu"
+    target: install
+
+- name: Suckless-builds - Install sent
+  become: yes
+  make:
+    chdir: "/home/{{ ansible_user_id }}/repos/suckless-builds/sent"
+    target: install
+
+- name: Suckless-builds - Install slock
+  become: yes
+  make:
+    chdir: "/home/{{ ansible_user_id }}/repos/suckless-builds/slock"
+    target: install
+
+- name: Suckless-builds - Install st
+  become: yes
+  make:
+    chdir: "/home/{{ ansible_user_id }}/repos/suckless-builds/st"
+    target: install
+
+- name: Suckless-builds - Install tabbed
+  become: yes
+  make:
+    chdir: "/home/{{ ansible_user_id }}/repos/suckless-builds/tabbed"
+    target: install

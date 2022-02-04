@@ -1,0 +1,3 @@
+#!/bin/sh
+
+free -m | awk 'NR==2{printf "%.1fG", $3/1024; printf "%.1fG\n", $2/1024; }' | sed 's/G/G\ \/\ /'

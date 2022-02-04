@@ -13,7 +13,8 @@ Playbooks in this repository are designed to ease the installation, configuratio
 # Usage
 - Modify hosts file according to your needs
 - Change default values of the variables inside the playbook files
-- Boot the installation medium and execute following commands on the live system:
+
+Boot the installation medium and execute following commands on the live system:
 $ passwd
 $ systemctl start sshd
 

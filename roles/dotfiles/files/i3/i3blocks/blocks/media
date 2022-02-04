@@ -1,0 +1,19 @@
+#!/bin/sh
+
+[ -n "${BLOCK_BUTTON}" ] && case "${BLOCK_BUTTON}" in
+    1) mpc toggle > /dev/null 2>&1 ;; # left click, pause
+    2) mpc random > /dev/null 2>&1 ;; # middle click, randomize playlist
+    3) mpc repeat > /dev/null 2>&1 ;; # right click, repeat current song
+    4) mpc prev > /dev/null 2>&1 ;; # scroll up, next song
+    5) mpc next > /dev/null 2>&1 ;; # scroll down, previous song
+    *) ;;
+esac
+
+mpc status | grep -q "paused" && paused="P"
+mpc status | grep -q "random: on" && random="S"
+mpc status | grep -q "repeat: on" && repeat="R"
+
+current=$(mpc current)
+status="${paused}${random}${repeat}"
+[ -n "${status}" ] && status="${status} | "
+[ -n "${current}" ] && echo "${status}${current}"

@@ -1,0 +1,49 @@
+---
+- hosts: workstations
+  remote_user: test
+
+  vars:
+    # Timezone configuration
+    #region: Europe
+    #city: Warsaw
+
+    # System configuration
+    #system: false
+    #blackarch: false
+    #bluetooth: false
+    #bluetooth_dongle: true
+    
+    ## Software configuration
+    abook: false
+    dunst: false
+    docker: false
+    firefox: false
+    i3: false
+    mpd: false
+    mpv: false
+    mutt: false
+    ncmpcpp: false
+    neofetch: false
+    newsboat: false
+    nvim: false
+    ranger: false
+    suckless: false
+    tmux: false
+    zathura: false
+    zsh: false
+
+  pre_tasks:
+    - name: Check internet connection
+      command: ping -c 1 -w 1 google.com
+      changed_when: False
+
+  roles:
+    - dotfiles
+  
+#  post_tasks:
+#    - name: Reboot after installation is complete
+#      become: yes
+#      shell: sleep 2 && reboot
+#      async: 5
+#      poll: 0
+#    - meta: end_host

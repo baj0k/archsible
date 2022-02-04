@@ -1,0 +1,30 @@
+#!/bin/sh
+
+if [ "$1" ]; then
+    name=$1
+else
+    name=$(dmenu -p "Please enter network name, leave empty if you want to search" <&-)
+fi
+
+[ "$name" ] || {
+    wpa_cli scan
+    name=$(
+    wpa_cli scan_results | sed 1,2d | while read -r _ _ _ _ ssid _; do
+        # Hidden wifi are not to be returned
+        [ "$ssid" ] || continue
+        echo "$ssid"
+    done | sort -u | dmenu -l 10 -p "Please choose WiFi")
+    [ "$name" ] || exit 1
+}
+
+pass=$(dmenu -P -p "Please enter your password, leave empty if the network has open access.")
+
+if [ "$pass" ]; then
+    wpa_passphrase "$name" <<EOF>> /etc/wpa_supplicant.conf
+$pass
+EOF
+else
+    printf 'network={\n\tssid="%s"\n\tkey_mgmt=NONE\n\tpriority=-999\n}\n' "$name" >> /etc/wpa_supplicant.conf
+fi
+
+wpa_cli reconfigure

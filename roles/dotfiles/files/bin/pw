@@ -1,0 +1,4 @@
+#!/bin/sh
+
+password=$(find "${PASSWORD_STORE_DIR:?}" -name '*.gpg' | sed 's/.*\/password-store\///' |  sed 's/.gpg$//' | dmenu -i -p "Pass:")
+[ -n "${password}" ] && pass show --clip "${password}"

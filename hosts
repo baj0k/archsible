@@ -1,3 +1,2 @@
 [workstations]
 workstation_1 ansible_host=10.10.10.118 ansible_connection=ssh 
-# ansible_user='{{ root_username }}'

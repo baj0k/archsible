@@ -1,0 +1,4 @@
+#!/bin/sh
+
+[ ! -d /sys/class/net/eth0/phydev ] || [ "$(cat /sys/class/net/eth0/operstate)" = 'down' ] && exit
+ip addr | grep 'UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'

@@ -12,6 +12,10 @@
     # Which drive to use
     drive: /dev/nvme0n1
 
+    # Network interfaces
+    wired_adapter: true
+    wireless_adapter: true
+
     # Self explanatory
     luks_password: test
     hostname: TEST

@@ -1,72 +1,142 @@
-# System configuration
-
-- include: install.yml
-  when: install
-
-- include: prelim.yml
-  when: system
-
-- include: system/system.yml
-  when: system
-  become: yes
-
-- include: system/blackarch.yml
-  when: blackarch
-
-- include: system/bluetooth.yml
-  when: bluetooth
-
-# Software configuration
-- include: abook.yml
-  when: abook
-
-- include: dunst.yml
-  when: dunst
-
-- include: docker.yml
-  when: dunst
-
-- include: firefox.yml
-  when: firefox
-
-- include: i3.yml
-  when: i3
-
-- include: mpd.yml
-  when: mpd
-
-- include: mpv.yml
-  when: mpv
-
-- include: mutt.yml
-  when: mutt
-
-- include: ncmpcpp.yml
-  when: ncmpcpp
-
-- include: neofetch.yml
-  when: neofetch
-
-- include: newsboat.yml
-  when: newsboat
-
-- include: nvim.yml
-  when: nvim
-
-- include: ranger.yml
-  when: ranger
-
-- include: suckless.yml
-  when: suckless
-
-- include: tmux.yml
-  when: tmux
-
-- include: zathura.yml
-  when: zathura
-
-- include: zsh.yml
-  when: zsh
-
 # TODO: fix sb makefiles to cleanup after installation
 # TODO: check docker setup
+#
+# TODO: If any problems with the time occur, try timedatectl set-local-rtc 0 and set-ntp 1
+        #- include: system/system.yml
+        #  when: post-install
+        #  become: yes
+    
+          #- include: system/blackarch.yml
+          #  when: blackarch
+          #
+          #- include: system/bluetooth.yml
+          #  when: bluetooth
+          #
+          #- include: docker.yml
+          #  when: dunst
+          #
+          #- include: suckless.yml
+          #  when: suckless
+- name: Pacman configuration
+  block:
+    # TODO: rankmirrors
+    - name: Pacman - Download mirrorlist
+      get_url:
+        url: "https://archlinux.org/mirrorlist/?country=PL&protocol=https&use_mirror_status=on"
+        dest: /etc/pacman.d/mirrorlist
+        force: yes
+    
+    - name: Pacman - Uncomment mirrors
+      replace:
+        path: /etc/pacman.d/mirrorlist
+        regexp: '##.*\n#Server'
+        replace: 'Server'
+    
+    - name: Pacman - Symlink configuration
+      file:
+        src: "{{ ansible_env.PWD }}/files/etc/pacman.conf"
+        path: /etc/pacman.conf
+        state: link
+        force: yes
+
+    - name: System - Update system
+      pacman:
+        update_cache: yes
+        upgrade: yes
+    
+    - name: System - Install packages
+      package:
+        name:
+          #      - git
+          #      - acpi
+          - bat
+          - wget
+          - rsync
+          - man-db
+          - man-pages
+          - base-devel
+          - dash
+          # fonts
+          - noto-fonts
+          - ttf-inconsolata
+          - ttf-liberation
+          - ttf-joypixels
+          - ttf-dejavu
+          - ttf-font-awesome
+        state: present
+    
+          #- name: AUR - Install AUR packages
+          #  become: no
+          #  aur:
+          #    name: 
+          #      - pikaur
+          #      - neovim-git
+          #      - girara-git
+          #      - zathura-git
+          #    use: makepkg
+          #    state: present
+          #  when: aur
+
+    
+      
+- name: User configuration
+  block:
+    # TODO: check if all the groups are necessary / need to add more
+    - name: Add user to groups
+      user:
+        name: "{{ user_username }}"
+        groups:
+          - adm
+          - games
+          - audio
+          - http
+          - sys
+          - wheel
+          - kvm
+          - video
+        append: yes
+        password: "{{ user_password | password_hash('sha512') }}"
+        update_password: on_create
+
+    - name: User - Create workspace directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "~/.cache"
+        - "~/.config"
+        - "~/.local"
+        - "~/ctf"
+        - "~/downloads"
+        - "~/fieldwork"
+        - "~/music"
+        - "~/pictures"
+        - "~/repos"
+        - "~/tmp"
+        - "~/videos"
+    
+    - name: User - Symlink user-dirs.dirs
+      file:
+        src: "{{ ansible_env.PWD }}/files/user-dirs.dirs"
+        path: "~/.config/user-dirs.dirs"
+        state: link
+    
+    - name: User - Symlink locale.conf
+      file:
+        src: "{{ ansible_env.PWD }}/files/locale.conf"
+        path: "~/.config/locale.conf"
+        state: link
+    
+    - name: User - Symlink local scripts
+      file:
+        src: "{{ ansible_env.PWD }}/files/bin"
+        path: "~/.local/bin"
+        state: link
+    
+- name: Localization settings
+  block:
+    - name: Set timezone
+      become: yes
+      timezone:
+        name: '{{ region }}/{{ city }}'
+        hwclock: local

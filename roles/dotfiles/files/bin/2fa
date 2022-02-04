@@ -1,0 +1,4 @@
+#!/bin/sh
+
+password=$(find "${PASSWORD_STORE_DIR:?}" -type f -name '*.gpg' | sed 's/.*\/password-store\///' |  sed 's/.gpg$//' | dmenu -i -p "Select OTP:")
+[ -n "${password}" ] && pass otp --clip "${password}" && otp=$(xclip -o -selection c) && notify-send -t 10000 "${otp}"

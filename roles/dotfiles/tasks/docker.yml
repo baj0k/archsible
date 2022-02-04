@@ -1,0 +1,14 @@
+- name: Docker - Install packages
+  become: yes
+  package:
+    name: 
+      - docker
+      - docker-compose
+    state: present
+
+- name: Docker - Add user to docker group
+  become: yes
+  user:
+    name: "{{ username }}"
+    groups: docker
+    append: yes

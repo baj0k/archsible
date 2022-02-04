@@ -1,16 +1,16 @@
-# TODO: Change to luks2 format when grub start fully supporting it
+# TODO: Change to luks2 format when grub starts fully supporting it
 #
 #    - name: debug
 #      debug:
 #        msg: '{{ lsblk.stdout_lines[0] }}'
 #
-# TODO: possible prevention - use UEFI secure boot to sign the bootloader with user's own keys
+# TODO: possible security prevention - use UEFI secure boot to sign the bootloader with user's own keys
+# TODO: check if possible to select microcode package (intel-ucode / amd-ucode) based on gathered facts (intel / amd processor)
 #
 # TODO: check if possible to gather facts during execution (disk wise) and use it instead of registering UUIDs
-#
 # TODO: add when: conditions on executing some tasks (like wred / wireless interface configuration)
 # TODO: Add optional disk shred task before partitioning
-#
+# TODO: when reviewing hardening possibilities consider adding a /tmp partition (1GB?) with nosuid etc options
 
 - name: Update the system clock
   command: timedatectl set-ntp true
@@ -144,19 +144,7 @@
         content: '{{ fstab.stdout }}'
         dest: /mnt/etc/fstab
 
-# TODO: move below block to post-configuration playbook
-- name: Configure timezone
-  block:
-    - name: Set the timezone for system clock
-      file:
-        src: '/mnt/usr/share/zoneinfo/{{ region }}/{{ city }}'
-        dest: /etc/localtime
-        state: link
-    
-    - name: Synchronize the Hardware Clock with the System Clock
-      command: arch-chroot /mnt hwclock --systohc
-
-- name: Localization
+- name: Localization settings
   block:
     - name: Configure locale.gen
       lineinfile:
@@ -272,6 +260,7 @@
 
           [DHCPv4]
           RouteMetric=10
+      when: wired_adapter
 
     - name: Configure wireless adapter
       blockinfile: 
@@ -286,6 +275,7 @@
           
           [DHCPv4]
           RouteMetric=20
+      when: wireless_adapter
 
     - name: Set root password
       command: arch-chroot /mnt usermod -p "{{ root_password | password_hash('sha512') }}" root

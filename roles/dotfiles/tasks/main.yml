@@ -1,0 +1,81 @@
+# TODO: fix sb makefiles to cleanup after installation
+# TODO: check docker setup
+#
+# TODO: move below block to post-configuration playbook
+#
+# TODO: If any problems with the time occur, try timedatectl set-local-rtc 0 and set-ntp 1
+
+- name: Localization settings
+  block:
+    - name: Set timezone
+      become: yes
+      timezone:
+        name: '{{ region }}/{{ city }}'
+        hwclock: local
+
+      
+- include: user.yml
+  when: post-install
+
+    #- include: system/system.yml
+    #  when: post-install
+    #  become: yes
+
+      #- include: system/blackarch.yml
+      #  when: blackarch
+      #
+      #- include: system/bluetooth.yml
+      #  when: bluetooth
+      #
+      ## Software configuration
+      #- include: abook.yml
+      #  when: abook
+      #
+      #- include: dunst.yml
+      #  when: dunst
+      #
+      #- include: docker.yml
+      #  when: dunst
+      #
+      #- include: firefox.yml
+      #  when: firefox
+      #
+      #- include: i3.yml
+      #  when: i3
+      #
+      #- include: mpd.yml
+      #  when: mpd
+      #
+      #- include: mpv.yml
+      #  when: mpv
+      #
+      #- include: mutt.yml
+      #  when: mutt
+      #
+      #- include: ncmpcpp.yml
+      #  when: ncmpcpp
+      #
+      #- include: neofetch.yml
+      #  when: neofetch
+      #
+      #- include: newsboat.yml
+      #  when: newsboat
+      #
+      #- include: nvim.yml
+      #  when: nvim
+      #
+      #- include: ranger.yml
+      #  when: ranger
+      #
+      #- include: suckless.yml
+      #  when: suckless
+      #
+      #- include: tmux.yml
+      #  when: tmux
+      #
+      #- include: zathura.yml
+      #  when: zathura
+      #
+      #- include: zsh.yml
+      #  when: zsh
+      #

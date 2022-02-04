@@ -1,5 +1,31 @@
 ---
 - hosts: workstations
+  remote_user: test
+
+  vars:
+    # Timezone configuration
+    region: Europe
+    city: Warsaw
+
+    # Conditional includes
+    system: false
+    blackarch: false
+    bluetooth: false
+    bluetooth_dongle: false
+    docker: false
+
+  pre_tasks:
+    - name: Check internet connection
+      command: ping -c 1 -w 1 google.com
+      changed_when: False
+
   roles:
     - configure
-
+  
+#  post_tasks:
+#    - name: Reboot after installation is complete
+#      become: yes
+#      shell: sleep 2 && reboot
+#      async: 5
+#      poll: 0
+#    - meta: end_host

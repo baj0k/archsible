@@ -1,0 +1,3 @@
+#!/bin/sh
+password=$(find "${PASSWORD_STORE_DIR:?}" -type f -name '*.gpg' | sed 's/.*\/password-store\///' |  sed 's/.gpg$//' | dmenu -i -p "Add to:")
+[ -n "${password}" ] && scrot -s "/tmp/screenshot-$(date +%F_%T).png" -e "zbarimg -q --raw ${f}" | pass otp append "${password}"
