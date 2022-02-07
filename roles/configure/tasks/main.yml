@@ -122,10 +122,3 @@
         - "~/tmp"
         - "~/videos"
     
-- name: Localization settings
-  block:
-    - name: Set timezone
-      become: yes
-      timezone:
-        name: '{{ region }}/{{ city }}'
-        hwclock: local

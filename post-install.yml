@@ -7,56 +7,23 @@
     country: PL
     city: Warsaw
 
-    # Which drive to use
-    #drive: /dev/nvme0n1
-
-    # Network interfaces
-    #wired_adapter: true
-    #wireless_adapter: true
-
     # Self explanatory
-    #luks_password: test
-    #hostname: TEST
-    #root_password: test
-    #user_username: test
-    #user_password: test
+    hostname: TEST
+    user_username: test
+    user_password: test
 
 # TODO: consider moving pre and post tasks to separate files after implementing the shred task
   pre_tasks:
-    - name: Verify the UEFI boot mode
-      stat:
-        path: /sys/firmware/efi/efivars
-      register: efivars
-      failed_when: efivars.stat.isdir is not defined
-
     - name: Check internet connection
       command: ping -c 1 -w 1 google.com
       changed_when: False
 
-# TODO: Remove after implementing shred task
-    - name: Remove existing data
-      block:
-        - name: Remove the volume group and physical volume
-          lvg:
-            vg: vg
-            pvs: /dev/mapper/cryptlvm
-            state: absent
-            force: yes
-    
-        - name: Remove the LUKS container
-          luks_device:
-            name: cryptlvm
-            state: absent
-    
-        - name: Erase GPT structures from the disk
-          command: sgdisk -Z '{{ drive }}'
-
   roles:
-    - install
+    - post-install
   
-  post_tasks:
-    - name: Reboot after installation is complete
-      shell: sleep 2 && reboot
-      async: 5
-      poll: 0
-    - meta: end_host
+      # post_tasks:
+      #   - name: Reboot after installation is complete
+      #     shell: sleep 2 && reboot
+      #     async: 5
+      #     poll: 0
+      #   - meta: end_host

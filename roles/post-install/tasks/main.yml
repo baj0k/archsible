@@ -1,149 +1,136 @@
-# TODO: Change to luks2 format when grub starts fully supporting it
+# TODO: consider moving to separate role / post-install or separate hardening role
+#- name: Post hardening
+#  block:
+#    - name: Install additional packages
+#      pacman:
+#        update_cache: yes
+#        name:
+#          - efitools
+#        state: present
 #
-#    - name: debug
-#      debug:
-#        msg: '{{ lsblk.stdout_lines[0] }}'
+#    - name: Protect against Evil Maid attacks
+#      block:
+#        - name: Create a GUID for key owner identification - Generate GUID
+#          command: uuidgen --random
+#          register: guid
 #
-# TODO: possible security prevention - use UEFI secure boot to sign the bootloader with user's own keys
-# TODO: check if possible to select microcode package (intel-ucode / amd-ucode) based on gathered facts (intel / amd processor)
+#        - name: Create a GUID for key owner identification - Save output to file
+#          copy:
+#            content: '{{ guid.stdout }}'
+#            dest: /root/GUID.txt
 #
-# TODO: check if possible to gather facts during execution (disk wise) and use it instead of registering UUIDs
-# TODO: add when: conditions on executing some tasks (like wred / wireless interface configuration)
-# TODO: Add optional disk shred task before partitioning
-# TODO: when reviewing hardening possibilities consider adding a /tmp partition (1GB?) with nosuid etc options
-
-- name: Update the system clock
-  command: timedatectl set-ntp true
+# DOTFILES PLAYBOOK IDEAS
+# TODO: prevent data loss - ensure that here are aliases set for rm, mv and cp with the '-i' flag that requires confirmation before executing command
+# TODO: Read through Archwiki general recommendations page for additional configuration
+# TODO: checkout coreutils improvements / alternatives from archwiki - saerch for wechiwiki core utilities
+# TODO: checkout base9 from suckless and explore possibilities of using it along / instead of coreustils GNU
 
 - name: Set timezone
   timezone:
     name: '{{ region }}/{{ city }}'
+    hwclock: local
 
-- name: Partition the disks
+- name: Pacman configuration
   block:
-    - name: Create EFI partition
-      command: sgdisk -n 1:0:551M -c 1:BOOT -t 1:ef00 '{{ drive }}'
-
-    - name: Create LUKS partition
-      command: sgdisk -n 0:0:0 -c 0:LUKS -t 0:8309 '{{ drive }}'
-
-    - name: Register paths of the new partitions
-      command: 'lsblk {{ drive }} -nlpo NAME'
-      register: lsblk
-    
-- name: Setup LVM on LUKS
-  block:
-    - name: Setup LUKS container
-      luks_device:
-        device: '{{ lsblk.stdout_lines[2] }}'
-        passphrase: '{{ luks_password }}'
-        type: luks1
-        pbkdf: 
-          iteration_count: 420997
-        name: cryptlvm
-        state: opened
-
-    - name: Setup physical volume and the volume group
-      lvg:
-        vg: vg
-        pvs: /dev/mapper/cryptlvm
-        force: yes
-
-    - name: Setup logical volumes
-      lvol:
-        vg: '{{ item.vg }}'
-        lv: '{{ item.lv }}'
-        size: '{{ item.size }}'
-        force: yes
-      loop:
-        - {vg: vg, lv: swap, size: 16G}
-        - {vg: vg, lv: root, size: 30G}
-        - {vg: vg, lv: var, size: 10G}
-        - {vg: vg, lv: varlog, size: 5G}
-        - {vg: vg, lv: vartmp, size: 2G}
-        - {vg: vg, lv: home, size: 100%FREE}
-                
-- name: Format the partitions
-  filesystem:
-    dev: '{{ item.dev }}'
-    fstype: '{{ item.fstype }}'
-    opts: '{{ item.opts }}'
-    force: yes
-  loop:
-    - {dev: '{{ lsblk.stdout_lines[1] }}', fstype: vfat, opts: -F32}
-    - {dev: /dev/mapper/vg-swap, fstype: swap, opts: }
-    - {dev: /dev/mapper/vg-root, fstype: ext4, opts: }
-    - {dev: /dev/mapper/vg-home, fstype: ext4, opts: }
-    - {dev: /dev/mapper/vg-var, fstype: ext4, opts: }
-    - {dev: /dev/mapper/vg-varlog, fstype: ext4, opts: }
-    - {dev: /dev/mapper/vg-vartmp, fstype: ext4, opts: }
-
-- name: Mount the file systems
-  block:
-    - name: Register UUIDs of the partitions and volumes
-      command: blkid -s UUID -o value '{{ item }}'
-      loop:
-        - /dev/nvme0n1p1
-        - /dev/nvme0n1p2
-        - /dev/vg/root
-        - /dev/vg/home
-        - /dev/vg/swap
-        - /dev/vg/var
-        - /dev/vg/varlog
-        - /dev/vg/vartmp
-      register: uuid
-
-    - name: Enable swap volume
-      command: swapon -U '{{ uuid.results[4].stdout }}'
-
-    - name: Mount logical volumes
-      mount:
-        path: '{{ item.path }}'
-        src: 'UUID={{ item.uuid }}'
-        fstype: '{{ item.fs }}'
-        state: mounted
-        passno: '{{ item.passno }}'
-      loop:
-        - {path: /mnt, uuid: '{{ uuid.results[2].stdout }}', fs: ext4, passno: 1}
-        - {path: /mnt/efi, uuid: '{{ uuid.results[0].stdout }}', fs: vfat, passno: 2}
-        - {path: /mnt/home, uuid: '{{ uuid.results[3].stdout }}', fs: ext4, passno: 2}
-        - {path: /mnt/var, uuid: '{{ uuid.results[5].stdout }}', fs: ext4, passno: 2}
-        - {path: /mnt/var/log, uuid: '{{ uuid.results[6].stdout }}', fs: ext4, passno: 2}
-        - {path: /mnt/var/tmp, uuid: '{{ uuid.results[7].stdout }}', fs: ext4, passno: 2}
-
-- name: Select mirrors
-  block:
-    - name: Download optimal mirrorlist
+    # TODO: implement rankmirrors
+    # TODO: this task should be added to the cronjob and performed once a week / a month (find the optimal schedule)
+    - name: Download mirrorlist
       get_url:
-        url: 'https://archlinux.org/mirrorlist/?country={{ country }}&ip_version=4&use_mirror_status=on'
+        url: 'https://archlinux.org/mirrorlist/?country={{ country }}&ip_version=4&protocol=https&use_mirror_status=on'
         dest: /etc/pacman.d/mirrorlist
         force: yes
     
     - name: Uncomment mirrors
       replace:
         path: /etc/pacman.d/mirrorlist
-        regexp: \#Server
-        replace: Server
-
-- name: Install essential packages
-  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub intel-ucode openssh python sudo
-
-- name: Generate fstab
-  block:
-    - name: Generate fstab - run command
-      command: genfstab -U /mnt
-      register: fstab
+        regexp: '##.*\n#Server'
+        replace: 'Server'
     
-    - name: Generate fstab - Save output to file
-      copy:
-        content: '{{ fstab.stdout }}'
-        dest: /mnt/etc/fstab
+    - name: Enabel multilib repository and change pacman configuration options
+      lineinfile:
+        dest: /etc/pacman.conf
+        regexp: '{{ item.regex }}'
+        line: '{{ item.line }}'
+        insertafter: '{{ item.insertafter }}'
+      loop:
+        - {regex: Architecture, line: Architecture = x86_64, insertafter: }
+        - {regex: Color, line: Color, insertafter: }
+        - {regex: ILoveCandy, line: ILoveCandy, insertafter: Color}
+        - {regex: ParallelDownloads, line: ParallelDownloads = 5, insertafter: }
+        - {regex: '^#\[multilib\]$', line: '[multilib]', insertafter: }
+        - {regex: Include = /etc/pacman.d/mirrorlist, line: Include = /etc/pacman.d/mirrorlist, insertafter: [multilib] }
+
+    - name: Update system
+      pacman:
+        update_cache: yes
+        upgrade: yes
+    
+    - name: Install packages
+      tags: long
+      package:
+        name:
+          - git
+            #      # TODO: is acpi needed on desktop or laptop only?
+            #      - acpi
+            #      - bat
+            #      - wget
+            #      - rsync
+            #      - man-db
+            #      - man-pages
+            #      - base-devel
+            #      - dash
+            #      # fonts TODO: test whether all below fonts are needed / additional are needed
+            #      - noto-fonts
+            #      - ttf-inconsolata
+            #      - ttf-liberation
+            #      - ttf-joypixels
+            #      - ttf-dejavu
+            #      - ttf-font-awesome
+        state: present
+    
+          #- name: AUR - Install AUR packages
+          #  aur:
+          #    name: 
+          #      - pikaur
+          #      - neovim-git
+          #      - girara-git
+          #      - zathura-git
+          #    use: makepkg
+          #    state: present
+          #  when: aur
+
+- name: User configuration
+  block:
+# TODO: check if all the groups are necessary / need to add more
+    - name: Create system user
+      user:
+        name: "{{ user_username }}"
+        groups:
+          - adm
+          - games
+          - audio
+          - http
+          - sys
+          - wheel
+          - kvm
+          - video
+        append: yes
+        password: "{{ user_password | password_hash('sha512') }}"
+        update_password: on_create
+
+    - name: Give passwordless sudo access to the wheel group
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '%wheel ALL='
+        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+        validate: '/usr/sbin/visudo --check --file=%s'
 
 - name: Localization settings
   block:
     - name: Configure locale.gen
       lineinfile:
-        dest: /mnt/etc/locale.gen
+        dest: /etc/locale.gen
         regexp: '{{ item.regex }}'
         line: '{{ item.line }}'
       loop:
@@ -151,19 +138,19 @@
         - {regex: '{{ country }}\.UTF-8 UTF-8', line: '{{ country|lower }}_{{ country }}.UTF-8 UTF-8'}
     
     - name: Generate locales
-      command: arch-chroot /mnt locale-gen
+      command: locale-gen
     
     - name: Create locale.conf
       lineinfile:
         create: yes
-        dest: /mnt/etc/locale.conf
+        dest: /etc/locale.conf
         regexp: LANG=en_US\.UTF-8
         line: LANG=en_US.UTF-8
     
     - name: Create vconsole.conf
       blockinfile:
         create: yes
-        dest: /mnt/etc/vconsole.conf
+        dest: /etc/vconsole.conf
         block: |
           'KEYMAP={{ country|lower }}'
           FONT=Lat2-Terminus16
@@ -172,137 +159,5 @@
     - name: Set hostname
       lineinfile:
         create: yes
-        dest: /mnt/etc/hostname
+        dest: /etc/hostname
         line: '{{ hostname }}'
-
-- name: Generate LUKS decryption key
-  block:
-    - name: Create directory for LUKS keyfile
-      file:
-        path: /mnt/root/secrets/
-        state: directory
-        mode: 0700
-
-    - name: Generate random LUKS keyfile
-      command: dd bs=512 count=8 if=/dev/random of=/mnt/root/secrets/luks-crypt.bin iflag=fullblock
-
-    - name: Change LUKS keyfile permissions
-      file:
-        path: /mnt/root/secrets/luks-crypt.bin
-        mode: 0000
-
-    - name: Add keyfile to the LUKS container
-      luks_device:
-        device: '{{ lsblk.stdout_lines[2] }}'
-        passphrase: '{{ luks_password }}'
-        new_keyfile: /mnt/root/secrets/luks-crypt.bin
-        pbkdf: 
-          iteration_count: 420997
-
-- name: Generate initramfs
-  block:
-    - name: Add hooks and keyfile path to mkinitcpio.conf 
-      lineinfile:
-        dest: /mnt/etc/mkinitcpio.conf
-        regexp: '{{ item.regex }}'
-        line: '{{ item.line }}'
-      loop:
-        - {regex: ^HOOKS=, line: HOOKS=(base udev autodetect keyboard keymap modconf block encrypt lvm2 filesystems fsck)}
-        - {regex: ^FILES=, line: FILES=(/root/secrets/luks-crypt.bin)}
-
-    - name: Create new initramfs
-      command: arch-chroot /mnt mkinitcpio -p linux
-
-- name: Configure and install bootloader
-  block:
-    - name: Set kernel parameters
-      lineinfile:
-        dest: /mnt/etc/default/grub
-        regexp: '{{ item.regex }}'
-        line: '{{ item.line }}'
-      loop:
-        - {regex: GRUB_CMDLINE_LINUX=, line: 'GRUB_CMDLINE_LINUX="cryptdevice=UUID={{ uuid.results[1].stdout }}:cryptlvm resume=UUID={{ uuid.results[1].stdout }} cryptkey=rootfs:/root/secrets/luks-crypt.bin"'}
-        - {regex: GRUB_CMDLINE_LINUX_DEFAULT=, line: 'GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet net.ifnames=0"'}
-        - {regex: GRUB_ENABLE_CRYPTODISK=, line: GRUB_ENABLE_CRYPTODISK=y}
-
-    - name: Configure grub
-      command: arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
-
-    - name: Generate grub config
-      command: arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
-
-    - name: Change /boot permissions
-      file:
-        path: /mnt/boot
-        state: directory
-        mode: 0700
-
-- name: Post configuration
-  block:
-    - name: Enable network services
-      command: arch-chroot /mnt systemctl enable systemd-networkd systemd-resolved sshd
-
-    - name: Configure wired adapter
-      blockinfile: 
-        path: /mnt/etc/systemd/network/20-wired.network
-        create: true
-        block: |
-          [Match]
-          Name=eth0
-
-          [Network]
-          DHCP=yes
-
-          [DHCPv4]
-          RouteMetric=10
-      when: wired_adapter
-
-    - name: Configure wireless adapter
-      blockinfile: 
-        path: /mnt/etc/systemd/network/25-wireless.network
-        create: true
-        block: |
-          [Match]
-          Name=wlan0
-          
-          [Network]
-          DHCP=yes
-          
-          [DHCPv4]
-          RouteMetric=20
-      when: wireless_adapter
-
-    - name: Set root password
-      command: arch-chroot /mnt usermod -p "{{ root_password | password_hash('sha512') }}" root
-
-    - name: Give passwordless sudo access to the wheel group members
-      lineinfile:
-        path: /mnt/etc/sudoers
-        state: present
-        regexp: '%wheel ALL='
-        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
-        validate: '/usr/sbin/visudo --check --file=%s'
-
-    - name: Create user with sudo permissions
-      command: arch-chroot /mnt useradd -m -G wheel -p "{{ user_password | password_hash('sha512') }}" "{{ user_username }}"
- 
-# TODO: consider moving to separate role
-- name: Post hardening
-  block:
-    - name: Install additional packages
-      pacman:
-        update_cache: yes
-        name:
-          - efitools
-        state: present
-
-    - name: Protect against Evil Maid attacks
-      block:
-        - name: Create a GUID for key owner identification - Generate GUID
-          command: uuidgen --random
-          register: guid
-
-        - name: Create a GUID for key owner identification - Save output to file
-          copy:
-            content: '{{ guid.stdout }}'
-            dest: /root/GUID.txt

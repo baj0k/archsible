@@ -73,31 +73,3 @@
       #    state: present
       #  when: aur
 
-
-# TODO: check if all the groups are necessary / need to add more
-#    - name: Create user
-#      user:
-#        name: "{{ user_username }}"
-#        groups:
-#          - adm
-#          - games
-#          - audio
-#          - http
-#          - sys
-#          - wheel
-#          - kvm
-#          - video
-#        append: yes
-#        password: "{{ user_password | password_hash('sha512') }}"
-#        update_password: on_create
-#
-#    - name: Give passwordless sudo access to the wheel group
-#      lineinfile:
-#        # TODO: in case of error replace path
-#        #path: /mnt/etc/sudoers.d/wheel
-#        path: /etc/sudoers
-#        state: present
-#        regexp: '%wheel ALL='
-#        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
-#        validate: '/usr/sbin/visudo --check --file=%s'
-
