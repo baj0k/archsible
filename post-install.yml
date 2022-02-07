@@ -8,18 +8,18 @@
     city: Warsaw
 
     # Which drive to use
-    drive: /dev/nvme0n1
+    #drive: /dev/nvme0n1
 
     # Network interfaces
-    wired_adapter: true
-    wireless_adapter: true
+    #wired_adapter: true
+    #wireless_adapter: true
 
     # Self explanatory
-    luks_password: test
-    hostname: TEST
-    root_password: test
-    user_username: test
-    user_password: test
+    #luks_password: test
+    #hostname: TEST
+    #root_password: test
+    #user_username: test
+    #user_password: test
 
 # TODO: consider moving pre and post tasks to separate files after implementing the shred task
   pre_tasks:

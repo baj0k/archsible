@@ -1,10 +1,10 @@
 ---
 - hosts: workstations
   remote_user: test
-
   vars:
-    # Timezone configuration
+    # Timezone and locale configuration
     region: Europe
+    country: PL
     city: Warsaw
 
     # Conditional includes
