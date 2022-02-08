@@ -1,0 +1,26 @@
+- name: Neovim - Install packages
+  become: yes
+  package:
+    name: 
+      - neovim
+    state: present
+
+# TODO: check if its possible to merge below tasks
+- name: Neovim - Create directories
+  file:
+    path: "~/.config/nvim"
+    state: directory
+
+      #- name: Neovim - Symlink configuration
+      #  file:
+      #    src: "{{ ansible_env.PWD }}/files/nvim/init.vim"
+      #    path: "~/.config/nvim/init.vim"
+      #    state: link
+
+- name: Neovim - Symlink configuration
+  file:
+    #src:  "{{ role_path }}/files/nvim/init.vim"
+    src:  "/home/test/repos/archsible/roles/dotfiles/files/nvim/init.vim"
+    #src:  "files/nvim/init.vim"
+    path: "~/.config/nvim/init.vim"
+    state: link

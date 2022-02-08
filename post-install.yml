@@ -7,12 +7,14 @@
     country: PL
     city: Warsaw
 
+    # GPU manufacturer (intel / amd / nvidia)
+    #gpu: intel
+
     # Self explanatory
     hostname: TEST
     user_username: test
     user_password: test
 
-# TODO: consider moving pre and post tasks to separate files after implementing the shred task
   pre_tasks:
     - name: Check internet connection
       command: ping -c 1 -w 1 google.com

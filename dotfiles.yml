@@ -3,16 +3,9 @@
   remote_user: test
 
   vars:
-    # Timezone configuration
-    #region: Europe
-    #city: Warsaw
+    # Self explanatory
+    repo_path: '~/repos/archsible'
 
-    # System configuration
-    #system: false
-    #blackarch: false
-    #bluetooth: false
-    #bluetooth_dongle: true
-    
     ## Software configuration
     abook: false
     dunst: false
@@ -25,7 +18,7 @@
     ncmpcpp: false
     neofetch: false
     newsboat: false
-    nvim: false
+    neovim: true
     ranger: false
     suckless: false
     tmux: false

@@ -18,6 +18,20 @@
 #          copy:
 #            content: '{{ guid.stdout }}'
 #            dest: /root/GUID.txt
+##
+#      package:
+#        name:
+#          #- noto-fonts
+#          #- ttf-inconsolata
+#          #- ttf-liberation
+#          #- ttf-joypixels
+#          #- ttf-dejavu
+#          #- ttf-font-awesome
+          # TODO: is acpi needed on desktop or laptop only?
+#          #- acpi
+#          #- bat
+#          #- dash
+#          #- zathura
 #
 # DOTFILES PLAYBOOK IDEAS
 # TODO: prevent data loss - ensure that here are aliases set for rm, mv and cp with the '-i' flag that requires confirmation before executing command
@@ -25,14 +39,79 @@
 # TODO: checkout coreutils improvements / alternatives from archwiki - saerch for wechiwiki core utilities
 # TODO: checkout base9 from suckless and explore possibilities of using it along / instead of coreustils GNU
 
-- name: Set timezone
-  timezone:
-    name: '{{ region }}/{{ city }}'
-    hwclock: local
-
-- name: Pacman configuration
+- name: Localization settings
+  tags: done
   block:
-    # TODO: implement rankmirrors
+    - name: Set timezone
+      timezone:
+        name: '{{ region }}/{{ city }}'
+        hwclock: local
+
+    # TODO: create a pull request to the locale_gen.py ansible module. 
+    # Fix invalid regex on arch linux and locales not being checked while available with locale -a command
+    # https://github.com/ansible-collections/community.general/blob/main/plugins/modules/system/locale_gen.py
+    - name: Generate locales
+      locale_gen:
+        name: '{{ item }}'
+      loop:
+        - en_US.UTF-8
+        - '{{ country|lower }}_{{ country }}.UTF-8'
+
+    - name: Create locale.conf
+      lineinfile:
+        create: yes
+        dest: /etc/locale.conf
+        regexp: LANG=en_US\.UTF-8
+        line: LANG=en_US.UTF-8
+    
+    - name: Create vconsole.conf
+      blockinfile:
+        create: yes
+        dest: /etc/vconsole.conf
+        block: |
+          'KEYMAP={{ country|lower }}'
+          FONT=Lat2-Terminus16
+          FONT_MAP=8859-2
+
+    # TODO: check the hostname module
+    - name: Set hostname
+      lineinfile:
+        create: yes
+        dest: /etc/hostname
+        line: '{{ hostname }}'
+
+- name: User configuration
+  tags: done
+  block:
+# TODO: check if all the groups are necessary / need to add more
+# TODO: shell specification?
+    - name: Create system user
+      user:
+        name: "{{ user_username }}"
+        groups:
+          - adm
+          - games
+          - sys
+          - wheel
+          - lp
+          - audio
+          - kvm
+          - video
+        append: yes
+        password: "{{ user_password | password_hash('sha512') }}"
+        update_password: on_create
+
+    - name: Give passwordless sudo access to the wheel group
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '%wheel ALL='
+        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+        validate: '/usr/sbin/visudo --check --file=%s'
+
+- name: Package management
+  block:
+    # TODO: reflector --fastest 5 --country pl --age 12 --protocol https --sort rate --ipv4
     # TODO: this task should be added to the cronjob and performed once a week / a month (find the optimal schedule)
     - name: Download mirrorlist
       get_url:
@@ -65,99 +144,53 @@
         update_cache: yes
         upgrade: yes
     
-    - name: Install packages
+    - name: Install essential packages
       tags: long
       package:
         name:
           - git
-            #      # TODO: is acpi needed on desktop or laptop only?
-            #      - acpi
-            #      - bat
-            #      - wget
-            #      - rsync
-            #      - man-db
-            #      - man-pages
-            #      - base-devel
-            #      - dash
-            #      # fonts TODO: test whether all below fonts are needed / additional are needed
-            #      - noto-fonts
-            #      - ttf-inconsolata
-            #      - ttf-liberation
-            #      - ttf-joypixels
-            #      - ttf-dejavu
-            #      - ttf-font-awesome
+          - wget
+          - rsync
+          - man-db
+          - man-pages
+          - base-devel
         state: present
     
-          #- name: AUR - Install AUR packages
-          #  aur:
-          #    name: 
-          #      - pikaur
-          #      - neovim-git
-          #      - girara-git
-          #      - zathura-git
-          #    use: makepkg
-          #    state: present
-          #  when: aur
-
-- name: User configuration
-  block:
-# TODO: check if all the groups are necessary / need to add more
-    - name: Create system user
-      user:
-        name: "{{ user_username }}"
-        groups:
-          - adm
-          - games
-          - audio
-          - http
-          - sys
-          - wheel
-          - kvm
-          - video
-        append: yes
-        password: "{{ user_password | password_hash('sha512') }}"
-        update_password: on_create
-
-    - name: Give passwordless sudo access to the wheel group
-      lineinfile:
-        path: /etc/sudoers
+    - name: Install AUR helper
+      become: yes
+      become_user: '{{ user_username }}'
+      aur:
+        name: yay
+        use: makepkg
         state: present
-        regexp: '%wheel ALL='
-        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
-        validate: '/usr/sbin/visudo --check --file=%s'
 
-- name: Localization settings
+# TODO: make GUI optional? (move to dotfiles maybe?)
+- name: Graphical user interface
   block:
-    - name: Configure locale.gen
-      lineinfile:
-        dest: /etc/locale.gen
-        regexp: '{{ item.regex }}'
-        line: '{{ item.line }}'
-      loop:
-        - {regex: en_US\.UTF-8 UTF-8, line: en_US.UTF-8 UTF-8}
-        - {regex: '{{ country }}\.UTF-8 UTF-8', line: '{{ country|lower }}_{{ country }}.UTF-8 UTF-8'}
-    
-    - name: Generate locales
-      command: locale-gen
-    
-    - name: Create locale.conf
-      lineinfile:
-        create: yes
-        dest: /etc/locale.conf
-        regexp: LANG=en_US\.UTF-8
-        line: LANG=en_US.UTF-8
-    
-    - name: Create vconsole.conf
-      blockinfile:
-        create: yes
-        dest: /etc/vconsole.conf
-        block: |
-          'KEYMAP={{ country|lower }}'
-          FONT=Lat2-Terminus16
-          FONT_MAP=8859-2
+    - name: Install xorg
+      package:
+        name: 
+          - xorg
+          - xorg-xinit
+          - xwallpaper
+          - xcompmgr
+        state: present
 
-    - name: Set hostname
-      lineinfile:
-        create: yes
-        dest: /etc/hostname
-        line: '{{ hostname }}'
+    # TODO: fix for amd and nvidia drivers (current setup works for intel)
+    - name: Install GPU drivers
+      package:
+        name: 
+          - mesa
+          - lib32-mesa
+          - xf86-video-intel
+          - vulkan-intel
+          - intel-media-driver
+        state: present
+
+    # TODO: currently no display manager is used
+    - name: Install display and window managers
+      package:
+        name: 
+          - i3-gaps
+          - i3blocks
+        state: present

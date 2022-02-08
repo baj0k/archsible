@@ -1,0 +1,123 @@
+# TODO: fix sb makefiles to cleanup after installation
+# TODO: check docker setup
+#
+# TODO: If any problems with the time occur, try timedatectl set-local-rtc 0 and set-ntp 1
+# TODO: remove tags
+# TODO: optimal mirror selection task is temporary, mirrorlist should be generated on post-configuration playbook after reboot with: reflector --fastest 5 --country Poland --age 12 --protocol https --sort rate --ipv4
+# TODO: optimal mirror selection for blackarch repositories: rankmirrors -t /etc/pacman.d/blackarch-mirrorlist -r blackarch (remove -t option after manually ranking the mirrors)
+#
+#- name: Network - Setup DNS
+#  lineinfile:
+#    path: /etc/resolv.conf
+#    line: nameserver 1.1.1.1
+#    state: present
+#
+#
+#- name: Docker - Install packages
+#  become: yes
+#  package:
+#    name: 
+#      - docker
+#      - docker-compose
+#    state: present
+#
+#- name: Docker - Add user to docker group
+#  become: yes
+#  user:
+#    name: "{{ username }}"
+#    groups: docker
+#    append: yes
+#
+#- name: Blackarch - Download setup script
+#  command:
+#    cmd: "curl -O https://blackarch.org/strap.sh"
+#    chdir: /tmp
+#
+#- name: Blackarch - Setup repository
+#  become: yes
+#  command:
+#    cmd: "sh /tmp/strap.sh"
+#    chdir: /tmp
+#
+#- name: Blackarch - Install packages
+#  become: yes
+#  package:
+#    name:
+#      - burpsuite
+#      - gobuster
+#      - nmap
+#      - gtfo
+#      - msfdb #metasploit in separate task?
+#    state: present
+#    
+          #- include: system/bluetooth.yml
+          #  when: bluetooth
+          #
+          #- include: suckless.yml
+          #  when: suckless
+          #
+          #
+
+          #
+          #
+          #- name: Suckless-builds - Clone repository
+          #  git:
+          #    repo: https://github.com/baj0k/SB.git
+          #    dest: ~/repos/suckless-builds
+          #
+          #- name: Suckless-builds - Install dmenu
+          #  become: yes
+          #  make:
+          #    chdir: "/home/{{ ansible_user_id }}/repos/suckless-builds/dmenu"
+          #    target: install
+          #
+          #- name: Suckless-builds - Install sent
+          #  become: yes
+          #  make:
+          #    chdir: "/home/{{ ansible_user_id }}/repos/suckless-builds/sent"
+          #    target: install
+          #
+          #- name: Suckless-builds - Install slock
+          #  become: yes
+          #  make:
+          #    chdir: "/home/{{ ansible_user_id }}/repos/suckless-builds/slock"
+          #    target: install
+          #
+          #- name: Suckless-builds - Install st
+          #  become: yes
+          #  make:
+          #    chdir: "/home/{{ ansible_user_id }}/repos/suckless-builds/st"
+          #    target: install
+          #
+          #- name: Suckless-builds - Install tabbed
+          #  become: yes
+          #  make:
+          #    chdir: "/home/{{ ansible_user_id }}/repos/suckless-builds/tabbed"
+          #    target: install
+          #
+          #
+          #
+          #
+          #- name: Bluetooth - Install packages
+          #  become: yes
+          #  package:
+          #    name: 
+          #      - blueman
+          #      - bluez
+          #      - bluez-hid2hci
+          #      - bluez-utils
+          #    state: present
+          #
+          #- name: Bluetooth - Configure daemon
+          #  become: yes
+          #  modprobe:
+          #    name: btusb
+          #    state: present
+          #
+          #- name: Bluetooth - Configure daemon
+          #  become: yes
+          #  systemd:
+          #    name: bluetooth
+          #    state: started
+          #    enabled: yes
+          #          #

@@ -11,15 +11,7 @@
 # TODO: add when: conditions on executing some tasks (like wred / wireless interface configuration)
 # TODO: Add optional disk shred task before partitioning
 # TODO: when reviewing hardening possibilities consider adding a /tmp partition (1GB?) with nosuid etc options
-# TODO: implement async to execute tasks in paralell
 # TODO: add custom mapping in vim for: :let @/ = ""     this clears the current search highlight
-
-#- name: Update the system clock
-#  command: timedatectl set-ntp true
-#
-#- name: Set timezone
-#  timezone:
-#    name: '{{ region }}/{{ city }}'
 
 - name: Partition the disks
   block:
@@ -113,19 +105,19 @@
         - {path: /mnt/var/log, uuid: '{{ uuid.results[6].stdout }}', fs: ext4, passno: 2}
         - {path: /mnt/var/tmp, uuid: '{{ uuid.results[7].stdout }}', fs: ext4, passno: 2}
 
-          #- name: Select mirrors
-          #  block:
-          #    - name: Download optimal mirrorlist
-          #      get_url:
-          #        url: 'https://archlinux.org/mirrorlist/?country={{ country }}&ip_version=4&use_mirror_status=on'
-          #        dest: /etc/pacman.d/mirrorlist
-          #        force: yes
-          #    
-          #    - name: Uncomment mirrors
-          #      replace:
-          #        path: /etc/pacman.d/mirrorlist
-          #        regexp: \#Server
-          #        replace: Server
+- name: Select mirrors
+  block:
+    - name: Download optimal mirrorlist
+      get_url:
+        url: 'https://archlinux.org/mirrorlist/?country={{ country }}&ip_version=4&use_mirror_status=on'
+        dest: /etc/pacman.d/mirrorlist
+        force: yes
+    
+    - name: Uncomment mirrors
+      replace:
+        path: /etc/pacman.d/mirrorlist
+        regexp: \#Server
+        replace: Server
 
 - name: Install essential packages
   command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub '{{ proc }}'-ucode openssh python sudo
@@ -205,6 +197,7 @@
 
 - name: Post configuration
   block:
+    # TODO: disable sshd in post-install
     - name: Enable network services
       command: arch-chroot /mnt systemctl enable systemd-networkd systemd-resolved sshd
 

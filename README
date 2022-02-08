@@ -2,13 +2,15 @@ archsible - ansible playbooks designed to ease and automate Arch Linux environme
 
 Playbooks in this repository are designed to ease the installation, configuration and hardening of the fresh arch Linux OS
 
-# Features
-- Full disk encryption
-- my dotfiles
+# Available playbooks:
+- Minimal installation with full disk encryption
+- Post installation configuration and hardening
+- Setting up my dotfiles
 
 # Prerequisites
 - UEFI support enabled
 - Secure Boot disabled
+- Run ansible-galaxy collection install -r requirements.yml in order to install required additional modules
 
 # Usage
 - Modify hosts file according to your needs

@@ -1,3 +1,0 @@
-#!/bin/sh
-
-mpv --ytdl-format='bestvideo[height<=?1080][vcodec!=vp9]+bestaudio/best' ytdl://ytsearch:"$*"

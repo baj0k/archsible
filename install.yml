@@ -2,20 +2,16 @@
 - hosts: workstations
   remote_user: root
   vars:
-    # Timezone and locales
-    # Mirrorlist (consider removing?)
-    #region: Europe
-    #country: PL
-    #city: Warsaw
+    # Mirrorlist country selection
+    country: PL
 
-    # Processor manufacturer
+    # Processor manufacturer (intel / amd)
     proc: intel
 
-    # TODO: rephrase?
     # Drive to which the system will be installed
     drive: /dev/nvme0n1
 
-    # Enable network interfaces
+    # Configure network interfaces
     wired_adapter: true
     wireless_adapter: true
 
@@ -23,8 +19,6 @@
     luks_password: test
     hostname: TEST
     root_password: test
-      #    user_username: test
-      #    user_password: test
 
 # TODO: consider moving pre and post tasks to separate files after implementing the shred task
   pre_tasks:
