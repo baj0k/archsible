@@ -1,6 +1,8 @@
 # TODO: fix sb makefiles to cleanup after installation
 # TODO: check docker setup
 
+# TODO: check if there is a difference between linking directory and linking all files inside directory in a loop
+# TODO: compare files in repo with currently used on desktop and update if necessary
 
 - name: Workspace setup
   block:
@@ -17,14 +19,14 @@
         - "~/fieldwork"
         - "~/music"
         - "~/pictures"
-        - "~/repos"
+        - "{{ repo_path }}"
         - "~/tmp"
         - "~/videos"
     
     - name: Clone archsible repository
       git:
         repo: https://github.com/baj0k/archsible.git
-        dest: ~/repos/archsible
+        dest: '{{ repo_path }}/archsible'
 
           #- name: Symlink user-dirs.dirs
           #  file:
@@ -43,56 +45,31 @@
           #    src: "{{ ansible_env.PWD }}/files/bin"
           #    path: "~/.local/bin"
           #    state: link
-    
-#- include: abook.yml
-#  when: abook
-#
-#- include: dunst.yml
-#  when: dunst
-#
-#- include: docker.yml
-#  when: dunst
-#
-#- include: firefox.yml
-#  when: firefox
-#
-#- include: i3.yml
-#  when: i3
-#
-#- include: mpd.yml
-#  when: mpd
-#
-#- include: mpv.yml
-#  when: mpv
-#
-#- include: mutt.yml
-#  when: mutt
-#
-#- include: ncmpcpp.yml
-#  when: ncmpcpp
-#
-#- include: neofetch.yml
-#  when: neofetch
-#
-#- include: newsboat.yml
-#  when: newsboat
-#
-- name: Import tasks based on playbook variables
-  import_tasks: neovim.yml
-  when: neovim
-#
-#- include: ranger.yml
-#  when: ranger
-#
-#- include: suckless.yml
-#  when: suckless
-#
-#- include: tmux.yml
-#  when: tmux
-#
-#- include: zathura.yml
-#  when: zathura
-#
-#- include: zsh.yml
-#  when: zsh
-#
+- name: Include conditional tasks - System
+  include_tasks: '{{ item.tasks }}'
+  when: item.when
+  loop:
+    - { tasks: blackarch.yml, when: '{{ blackarch }}' }
+
+- name: Include conditional tasks - Software
+  include_tasks: '{{ item.tasks }}'
+  when: item.when
+  loop:
+    - { tasks: dunst.yml, when: '{{ dunst }}' }
+    - { tasks: docker.yml, when: '{{ docker }}' }
+    - { tasks: firefox.yml, when: '{{ firefox }}' }
+    - { tasks: i3.yml, when: '{{ i3 }}' }
+    - { tasks: mpd.yml, when: '{{ mpd }}' }
+    - { tasks: mpv.yml, when: '{{ mpv }}' }
+    - { tasks: ncmpcpp.yml, when: '{{ ncmpcpp }}' }
+    - { tasks: neofetch.yml, when: '{{ neofetch }}' } # TODO: consider removing
+    - { tasks: newsboat.yml, when: '{{ newsboat }}' } # TODO: cleanup urls
+    - { tasks: neovim.yml, when: '{{ neovim }}' }   # TODO: Check plugins (fix the healthcheck provider issue)
+    - { tasks: ranger.yml, when: '{{ ranger }}' }   # TODO: update configuration files, use: ranger --copy-config all
+    - { tasks: suckless.yml, when: '{{ suckless }}' }
+    - { tasks: tmux.yml, when: '{{ tmux }}' }
+    - { tasks: xorg.yml, when: '{{ i3 }}' }
+    - { tasks: zathura.yml, when: '{{ zathura }}' }
+    - { tasks: zsh.yml, when: '{{ zsh }}' }
+
+      # TODO: add crontab task (checkout if systemd timers are better)

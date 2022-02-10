@@ -7,9 +7,22 @@
       - xwallpaper
       - xcompmgr
     state: present
+      
+# TODO: fix for amd and nvidia drivers (current setup works for intel)
+- name: Xorg - Install GPU drivers
+  become: yes
+  package:
+    name: 
+      - mesa
+      - lib32-mesa
+      - xf86-video-intel
+      - vulkan-intel
+      - intel-media-driver
+    state: present
 
+# TODO: cleanup xinitrc
 - name: Xorg - Symlink configuration
   file:
-    src: "{{ ansible_env.PWD }}/files/xorg"
+    src:  "{{ dotfiles_path }}/xorg"
     path: "~/.config/xorg"
     state: link

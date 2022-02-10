@@ -8,6 +8,6 @@
 
 - name: Mpv - Symlink configuration
   file:
-    src: "{{ ansible_env.PWD }}/files/mpv"
+    src:  "{{ dotfiles_path }}/mpv"
     path: "~/.config/mpv"
     state: link

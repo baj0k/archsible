@@ -6,7 +6,7 @@
 - name: Suckless-builds - Install dmenu
   become: yes
   make:
-    chdir: "/home/{{ ansible_user_id }}/repos/suckless-builds/dmenu"
+    chdir: "{{ repo_path }}/suckless-builds/dmenu"
     target: install
 
 - name: Suckless-builds - Install sent

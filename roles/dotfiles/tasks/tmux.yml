@@ -7,6 +7,6 @@
 
 - name: Tmux - Symlink configuration
   file:
-    src: "{{ ansible_env.PWD }}/files/tmux"
+    src:  "{{ dotfiles_path }}/tmux"
     path: "~/.config/tmux"
     state: link

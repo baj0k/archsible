@@ -12,6 +12,6 @@
 
 - name: Mpd - Symlink configuration
   file:
-    src: "{{ ansible_env.PWD }}/files/mpd/mpd.conf"
+    src:  "{{ dotfiles_path }}/mpd/mpd.conf"
     path: "~/.config/mpd/mpd.conf"
     state: link

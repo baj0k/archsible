@@ -3,27 +3,29 @@
   remote_user: test
 
   vars:
-    # Self explanatory
-    repo_path: '~/repos/archsible'
+    # Path for the repository and dotfiles
+    repo_path: '{{ ansible_env.HOME }}/repos/'
+    dotfiles_path: '{{ repo_path }}/archsible/roles/dotfiles/files'
 
-    ## Software configuration
-    abook: false
-    dunst: false
-    docker: false
-    firefox: false
-    i3: false
-    mpd: false
+    # Setup blackarch repository
+    blackarch: true
+
+    # Include individual dotfiles
+    dunst: true
+    docker: true
+    firefox: true
+    i3: true
+    mpd: true
     mpv: false
-    mutt: false
-    ncmpcpp: false
-    neofetch: false
-    newsboat: false
+    ncmpcpp: true
+    neofetch: true
+    newsboat: true
     neovim: true
-    ranger: false
-    suckless: false
-    tmux: false
+    ranger: true
+    suckless: true
+    tmux: true
     zathura: false
-    zsh: false
+    zsh: true
 
   pre_tasks:
     - name: Check internet connection

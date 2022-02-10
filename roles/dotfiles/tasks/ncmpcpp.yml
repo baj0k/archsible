@@ -7,6 +7,6 @@
 
 - name: Ncmpcpp - Symlink configuration
   file:
-    src: "{{ ansible_env.PWD }}/files/ncmpcpp"
+    src:  "{{ dotfiles_path }}/ncmpcpp"
     path: "~/.config/ncmpcpp"
     state: link

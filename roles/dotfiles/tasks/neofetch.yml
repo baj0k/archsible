@@ -7,6 +7,6 @@
 
 - name: Neofetch - Symlink configuration
   file:
-    src: "{{ ansible_env.PWD }}/files/neofetch"
+    src:  "{{ dotfiles_path }}/neofetch"
     path: "~/.config/neofetch"
     state: link

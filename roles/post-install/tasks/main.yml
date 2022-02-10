@@ -163,34 +163,3 @@
         name: yay
         use: makepkg
         state: present
-
-# TODO: make GUI optional? (move to dotfiles maybe?)
-- name: Graphical user interface
-  block:
-    - name: Install xorg
-      package:
-        name: 
-          - xorg
-          - xorg-xinit
-          - xwallpaper
-          - xcompmgr
-        state: present
-
-    # TODO: fix for amd and nvidia drivers (current setup works for intel)
-    - name: Install GPU drivers
-      package:
-        name: 
-          - mesa
-          - lib32-mesa
-          - xf86-video-intel
-          - vulkan-intel
-          - intel-media-driver
-        state: present
-
-    # TODO: currently no display manager is used
-    - name: Install display and window managers
-      package:
-        name: 
-          - i3-gaps
-          - i3blocks
-        state: present

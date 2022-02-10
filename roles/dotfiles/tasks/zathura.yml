@@ -8,6 +8,6 @@
 
 - name: Zathura - Symlink configuration
   file:
-    src: "{{ ansible_env.PWD }}/files/zathura"
+    src:  "{{ dotfiles_path }}/zathura"
     path: "~/.config/zathura"
     state: link

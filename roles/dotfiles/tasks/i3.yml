@@ -1,5 +1,3 @@
-- include: xorg.yml
-
 - name: i3 - Install packages
   become: yes
   package:
@@ -10,6 +8,6 @@
 
 - name: i3 - Symlink configuration
   file:
-    src: "{{ ansible_env.PWD }}/files/i3"
+    src:  "{{ dotfiles_path }}/i3"
     path: "~/.config/i3"
     state: link

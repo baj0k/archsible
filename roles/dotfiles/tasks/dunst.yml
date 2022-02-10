@@ -8,6 +8,6 @@
 
 - name: Dunst - Symlink configuration
   file:
-    src: "{{ ansible_env.PWD }}/files/dunst"
+    src:  "{{ dotfiles_path }}/dunst"
     path: "~/.config/dunst"
     state: link

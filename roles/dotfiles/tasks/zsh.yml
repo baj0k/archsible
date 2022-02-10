@@ -1,4 +1,4 @@
-- name: zsh - Install packages
+- name: Zsh - Install packages
   become: yes
   package:
     name:
@@ -7,13 +7,13 @@
       - zsh-syntax-highlighting
     state: present
 
-- name: zsh - Change default shell
+- name: Zsh - Change default shell
   become: yes
   user:
     name: "{{ ansible_user_id }}"
     shell: /bin/zsh
 
-- name: zsh - Xdg compliant workaround
+- name: Zsh - Workaround for XDG compliance
   become: yes
   lineinfile:
     path: /etc/zsh/zshenv
@@ -21,8 +21,8 @@
     create: yes
     line: 'export ZDOTDIR="$HOME/.config/zsh"'
 
-- name: zsh - Symlink configuration
+- name: Zsh - Symlink configuration
   file:
-    src: "{{ ansible_env.PWD }}/files/zsh"
+    src:  "{{ dotfiles_path }}/zsh"
     path: "~/.config/zsh"
     state: link
