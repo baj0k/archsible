@@ -18,7 +18,8 @@
 #          copy:
 #            content: '{{ guid.stdout }}'
 #            dest: /root/GUID.txt
-##
+##############################################################################################
+#
 #      package:
 #        name:
 #          #- noto-fonts
@@ -154,7 +155,17 @@
           - man-db
           - man-pages
           - base-devel
+          - pkgfile
         state: present
+
+    - name: Enable a pkgfile timer unit
+      systemd:
+        name: pkgfile-update.timer
+        state: started
+        enabled: yes
+
+        # - name: Create pkgfile database
+        #   command: pkgfile -u
     
     - name: Install AUR helper
       become: yes

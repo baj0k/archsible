@@ -8,22 +8,22 @@
     dotfiles_path: '{{ repo_path }}/archsible/roles/dotfiles/files'
 
     # Setup blackarch repository
-    blackarch: true
+    blackarch: false # TODO: needs fix
 
     # Include individual dotfiles
-    dunst: true
-    docker: true
+    dunst: false
+    docker: false
     firefox: true
     i3: true
-    mpd: true
+    mpd: false
     mpv: false
-    ncmpcpp: true
-    neofetch: true
-    newsboat: true
-    neovim: true
-    ranger: true
-    suckless: true
-    tmux: true
+    ncmpcpp: false
+    neofetch: false
+    newsboat: false
+    neovim: false
+    ranger: false
+    suckless: false
+    tmux: false
     zathura: false
     zsh: true
 
