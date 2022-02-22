@@ -2,25 +2,23 @@
 - hosts: workstations
   remote_user: root
   vars:
-    # Mirrorlist country selection
+    # Mirrorlist country code
     country: PL
 
-    # Processor manufacturer (intel / amd)
+    # Processor vendor [intel / amd]
     proc: intel
 
     # Drive to which the system will be installed
-    drive: /dev/nvme0n1
+    drive: nvme0n1
 
-    # Configure network interfaces
+    # Network interfaces
     wired_adapter: true
     wireless_adapter: true
 
-    # Self explanatory
+    # Password configuration
     luks_password: test
-    hostname: TEST
     root_password: test
 
-# TODO: consider moving pre and post tasks to separate files after implementing the shred task
   pre_tasks:
     - name: Verify the UEFI boot mode
       stat:
@@ -48,7 +46,7 @@
             state: absent
     
         - name: Erase GPT structures from the disk
-          command: sgdisk -Z '{{ drive }}'
+          command: sgdisk -Z '/dev/{{ drive }}'
 
   roles:
     - install

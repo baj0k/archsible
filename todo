@@ -1,12 +1,13 @@
-#
+CHECK: 
+    - after dotfiles playbook does cat /etc/passwd return where you can find bat binary?
+
+
 #- name: Network - Setup DNS
 #  lineinfile:
 #    path: /etc/resolv.conf
 #    line: nameserver 1.1.1.1
 #    state: present
-#
-#
-#    
+    
           #- include: system/bluetooth.yml
           #  when: bluetooth
           #

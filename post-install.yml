@@ -2,13 +2,13 @@
 - hosts: workstations
   remote_user: root
   vars:
-    # Timezone and locale configuration
+    # Include hardening tasks
+    hardening: false
+
+    # Localization Settings
     region: Europe
     country: PL
     city: Warsaw
-
-    # GPU manufacturer (intel / amd / nvidia)
-    #gpu: intel
 
     # Self explanatory
     hostname: TEST
@@ -22,10 +22,21 @@
 
   roles:
     - post-install
+
+  post_tasks:
+    - name: Import the hardening role
+      import_role:
+        name: hardening
+      when: hardening
   
-      # post_tasks:
-      #   - name: Reboot after installation is complete
-      #     shell: sleep 2 && reboot
-      #     async: 5
-      #     poll: 0
-      #   - meta: end_host
+    # TODO: move to dotfiles
+    - name: Disable sshd.service
+      systemd:
+        name: sshd
+        enabled: no
+
+          # - name: Reboot after installation is complete
+          #   shell: sleep 2 && reboot
+          #   async: 5
+          #   poll: 0
+          # - meta: end_host

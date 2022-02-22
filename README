@@ -14,7 +14,7 @@ Playbooks in this repository are designed to ease the installation, configuratio
 
 # Usage
 - Modify hosts file according to your needs
-- Change default values of the variables inside the playbook files
+- Modify variables inside the playbooks
 
 Boot the installation medium and execute following commands on the live system:
 $ passwd
@@ -32,6 +32,10 @@ The LUKS partition stores an encrypted LUKS container which is decrypted automat
 How it works:
 After the machine is powered on, the bootloader (GRUB) asks for a passphrase to be unlocked and executed.
 Bootloader takes the kernel image and the initramfs which are used to bring up the rest of the system. In the initramfs, the path to the unencrypted key is stored which allows automatic decryption of the LUKS container during boot.
+
+Important information:
+- The LUKS1 format is used because grub doesn't yet support LUKS2 format. This should be changed if the situation changes.
+- Any installation tasks that are done in chroot are using a command ansible module. This is due to the current lack of possibility to execute ansible playbooks in the remote chroot.
 
 Security considerations:
 - With an encrypted boot partition, there is no option to modify user's kernel image or initramfs, but it would be still vulnerable to Evil Maid attacks.

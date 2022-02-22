@@ -1,8 +1,28 @@
+# TODO: Manual tasks:
+#       install libxft-bgra (no option to automatically resolve pacman conflict )
+#
+#
 # TODO: fix sb makefiles to cleanup after installation
 # TODO: check docker setup
 
 # TODO: check if there is a difference between linking directory and linking all files inside directory in a loop
 # TODO: compare files in repo with currently used on desktop and update if necessary
+        # TODO: move to dotfiles
+        #    - name: Install AUR helper
+        #      become: yes
+        #      become_user: '{{ user_username }}'
+        #      aur:
+        #        name: yay
+        #        use: makepkg
+        #        state: present
+#      package:
+#        name:
+          # TODO: is acpi needed on desktop or laptop only?
+#          #- acpi
+#          #- bat
+#          #- dash
+#          #- zathura
+#
 
 - name: Workspace setup
   block:
@@ -28,29 +48,19 @@
         repo: https://github.com/baj0k/archsible.git
         dest: '{{ repo_path }}/archsible'
 
-    - name: Symlink user-dirs.dirs
-      file:
-        src: "{{ dotfiles_path }}/user-dirs.dirs"
-        path: "~/.config/user-dirs.dirs"
-        state: link
-    
-    - name: User - Symlink locale.conf
-      file:
-        src: "{{ dotfiles_path }}/locale.conf"
-        path: "~/.config/locale.conf"
-        state: link
-    
-    - name: User - Symlink local scripts
-      file:
-        src: "{{ dotfiles_path }}/bin"
-        path: "~/.local/bin"
-        state: link
+- name: Include conditional tasks - User
+  include_tasks: '{{ item }}'
+  when: user
+  loop:
+    - user.yml
 
 - name: Include conditional tasks - System
   include_tasks: '{{ item.tasks }}'
   when: item.when
   loop:
+    # TODO: consider moving all below to post-install
     - { tasks: blackarch.yml, when: '{{ blackarch }}' }
+    - { tasks: bluetooth.yml, when: '{{ bluetooth }}' }
 
 - name: Include conditional tasks - Software
   include_tasks: '{{ item.tasks }}'

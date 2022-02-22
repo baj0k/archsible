@@ -1,35 +1,32 @@
-# TODO: Change to luks2 format when grub starts fully supporting it
-#
-#    - name: debug
-#      debug:
-#        msg: '{{ lsblk.stdout_lines[0] }}'
-#
-# TODO: possible security prevention - use UEFI secure boot to sign the bootloader with user's own keys
 # TODO: check if possible to select microcode package (intel-ucode / amd-ucode) based on gathered facts (intel / amd processor)
-#
-# TODO: check if possible to gather facts during execution (disk wise) and use it instead of registering UUIDs
-# TODO: add when: conditions on executing some tasks (like wred / wireless interface configuration)
 # TODO: Add optional disk shred task before partitioning
 # TODO: when reviewing hardening possibilities consider adding a /tmp partition (1GB?) with nosuid etc options
-# TODO: add custom mapping in vim for: :let @/ = ""     this clears the current search highlight
 
 - name: Partition the disks
   block:
     - name: Create EFI partition
-      command: sgdisk -n 1:0:551M -c 1:BOOT -t 1:ef00 '{{ drive }}'
+      command: sgdisk -n 1:0:551M -c 1:BOOT -t 1:ef00 '/dev/{{ drive }}'
 
     - name: Create LUKS partition
-      command: sgdisk -n 0:0:0 -c 0:LUKS -t 0:8309 '{{ drive }}'
+      command: sgdisk -n 0:0:0 -c 0:LUKS -t 0:8309 '/dev/{{ drive }}'
 
-    - name: Register paths of the new partitions
-      command: 'lsblk {{ drive }} -nlpo NAME'
-      register: lsblk
-    
+    - name: Update gathered facts
+      setup:
+
+    - name: Initialize empty partition list
+      set_fact:
+        partitions: []
+
+    - name: Get selected drive partitions
+      set_fact:
+        partitions: "{{ partitions + [item.key] }}"
+      with_dict: "{{ ansible_devices[drive].partitions }}"
+
 - name: Setup LVM on LUKS
   block:
     - name: Setup LUKS container
       luks_device:
-        device: '{{ lsblk.stdout_lines[2] }}'
+        device: '/dev/{{ partitions[1] }}'
         passphrase: '{{ luks_password }}'
         type: luks1
         pbkdf: 
@@ -64,31 +61,44 @@
     opts: '{{ item.opts }}'
     force: yes
   loop:
-    - {dev: '{{ lsblk.stdout_lines[1] }}', fstype: vfat, opts: -F32}
+    - {dev: '/dev/{{ partitions[0] }}', fstype: vfat, opts: -F32}
     - {dev: /dev/mapper/vg-swap, fstype: swap, opts: }
     - {dev: /dev/mapper/vg-root, fstype: ext4, opts: }
-    - {dev: /dev/mapper/vg-home, fstype: ext4, opts: }
     - {dev: /dev/mapper/vg-var, fstype: ext4, opts: }
     - {dev: /dev/mapper/vg-varlog, fstype: ext4, opts: }
     - {dev: /dev/mapper/vg-vartmp, fstype: ext4, opts: }
+    - {dev: /dev/mapper/vg-home, fstype: ext4, opts: }
 
 - name: Mount the file systems
   block:
-    - name: Register UUIDs of the partitions and volumes
-      command: blkid -s UUID -o value '{{ item }}'
-      loop:
-        - /dev/nvme0n1p1
-        - /dev/nvme0n1p2
-        - /dev/vg/root
-        - /dev/vg/home
-        - /dev/vg/swap
-        - /dev/vg/var
-        - /dev/vg/varlog
-        - /dev/vg/vartmp
-      register: uuid
+    - name: Update gathered facts
+      setup:
+
+    - name: Initialize empty uuid list
+      set_fact:
+        vg_uuid: []
+        part_uuid: []
+
+    - name: Get vg_uuids
+      set_fact:
+        vg_uuid: "{{ vg_uuid + item.value }}"
+      with_dict: "{{ ansible_device_links.uuids }}"
+      when: item.key.startswith('dm')
+  
+    - name: Get part_uuids
+      set_fact:
+        part_uuid: "{{ part_uuid + item.value }}"
+      with_dict: "{{ ansible_device_links.uuids }}"
+      when: item.key.startswith(drive)
+  
+    - name: show uuids
+      debug: var=vg_uuid
+
+    - name: show uuids
+      debug: var=part_uuid
 
     - name: Enable swap volume
-      command: swapon -U '{{ uuid.results[4].stdout }}'
+      command: swapon -U '{{ vg_uuid[5] }}'
 
     - name: Mount logical volumes
       mount:
@@ -98,16 +108,16 @@
         state: mounted
         passno: '{{ item.passno }}'
       loop:
-        - {path: /mnt, uuid: '{{ uuid.results[2].stdout }}', fs: ext4, passno: 1}
-        - {path: /mnt/efi, uuid: '{{ uuid.results[0].stdout }}', fs: vfat, passno: 2}
-        - {path: /mnt/home, uuid: '{{ uuid.results[3].stdout }}', fs: ext4, passno: 2}
-        - {path: /mnt/var, uuid: '{{ uuid.results[5].stdout }}', fs: ext4, passno: 2}
-        - {path: /mnt/var/log, uuid: '{{ uuid.results[6].stdout }}', fs: ext4, passno: 2}
-        - {path: /mnt/var/tmp, uuid: '{{ uuid.results[7].stdout }}', fs: ext4, passno: 2}
+        - {path: /mnt, uuid: '{{ vg_uuid[4] }}', fs: ext4, passno: 1}
+        - {path: /mnt/efi, uuid: '{{ part_uuid[0] }}', fs: vfat, passno: 2}
+        - {path: /mnt/home, uuid: '{{ vg_uuid[0] }}', fs: ext4, passno: 2}
+        - {path: /mnt/var, uuid: '{{ vg_uuid[3] }}', fs: ext4, passno: 2}
+        - {path: /mnt/var/log, uuid: '{{ vg_uuid[2] }}', fs: ext4, passno: 2}
+        - {path: /mnt/var/tmp, uuid: '{{ vg_uuid[1] }}', fs: ext4, passno: 2}
 
 - name: Select mirrors
   block:
-    - name: Download optimal mirrorlist
+    - name: Download mirrorlist
       get_url:
         url: 'https://archlinux.org/mirrorlist/?country={{ country }}&ip_version=4&use_mirror_status=on'
         dest: /etc/pacman.d/mirrorlist
@@ -151,7 +161,7 @@
 
     - name: Add keyfile to the LUKS container
       luks_device:
-        device: '{{ lsblk.stdout_lines[2] }}'
+        device: '/dev/{{ partitions[1] }}'
         passphrase: '{{ luks_password }}'
         new_keyfile: /mnt/root/secrets/luks-crypt.bin
         pbkdf: 
@@ -179,7 +189,7 @@
         regexp: '{{ item.regex }}'
         line: '{{ item.line }}'
       loop:
-        - {regex: GRUB_CMDLINE_LINUX=, line: 'GRUB_CMDLINE_LINUX="cryptdevice=UUID={{ uuid.results[1].stdout }}:cryptlvm resume=UUID={{ uuid.results[1].stdout }} cryptkey=rootfs:/root/secrets/luks-crypt.bin"'}
+        - {regex: GRUB_CMDLINE_LINUX=, line: 'GRUB_CMDLINE_LINUX="cryptdevice=UUID={{ part_uuid[1] }}:cryptlvm resume=UUID={{ part_uuid[1] }} cryptkey=rootfs:/root/secrets/luks-crypt.bin"'}
         - {regex: GRUB_CMDLINE_LINUX_DEFAULT=, line: 'GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet net.ifnames=0"'}
         - {regex: GRUB_ENABLE_CRYPTODISK=, line: GRUB_ENABLE_CRYPTODISK=y}
 
@@ -195,13 +205,17 @@
         state: directory
         mode: 0700
 
-- name: Post configuration
+- name: Network configuration
   block:
-    # TODO: disable sshd in post-install
     - name: Enable network services
       command: arch-chroot /mnt systemctl enable systemd-networkd systemd-resolved sshd
 
-# TODO: Check whether its possible to not add ANSIBLE MANAGED BLOCK tags to the files modified with blockinfile module
+    - name: Change wait-online service to wait for any interface
+      lineinfile:
+        path: /mnt/usr/lib/systemd/system/systemd-networkd-wait-online.service
+        regexp: 'ExecStart='
+        line: 'ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --any'
+
     - name: Configure wired adapter
       blockinfile: 
         path: /mnt/etc/systemd/network/20-wired.network
@@ -235,8 +249,6 @@
     - name: Set root password
       command: arch-chroot /mnt usermod -p "{{ root_password | password_hash('sha512') }}" root
 
-    # TODO: Mention this in readme's security section
-    # TODO: Disable ssh password root login in post-install playbook
     - name: Allow root login via ssh
       lineinfile:
         dest: /mnt/etc/ssh/sshd_config

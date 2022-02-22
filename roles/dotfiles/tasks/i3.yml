@@ -4,6 +4,12 @@
     name:
       - i3-gaps
       - i3blocks
+      - noto-fonts
+      - ttf-joypixels
+      - ttf-font-awesome
+      - ttf-dejavu
+      - ttf-inconsolata
+      - ttf-liberation
     state: present
 
 - name: i3 - Symlink configuration

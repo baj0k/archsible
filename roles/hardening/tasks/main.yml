@@ -1,0 +1,18 @@
+# TODO: possible security prevention - use UEFI secure boot to sign the bootloader with user's own keys
+- name: Install additional packages
+  pacman:
+    update_cache: yes
+    name:
+      - efitools
+    state: present
+
+- name: Protect against Evil Maid attacks
+  block:
+    - name: Create a GUID for key owner identification - Generate GUID
+      command: uuidgen --random
+      register: guid
+
+    - name: Create a GUID for key owner identification - Save output to file
+      copy:
+        content: '{{ guid.stdout }}'
+        dest: /root/GUID.txt

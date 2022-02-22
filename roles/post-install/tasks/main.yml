@@ -1,92 +1,46 @@
-# TODO: consider moving to separate role / post-install or separate hardening role
-#- name: Post hardening
-#  block:
-#    - name: Install additional packages
-#      pacman:
-#        update_cache: yes
-#        name:
-#          - efitools
-#        state: present
-#
-#    - name: Protect against Evil Maid attacks
-#      block:
-#        - name: Create a GUID for key owner identification - Generate GUID
-#          command: uuidgen --random
-#          register: guid
-#
-#        - name: Create a GUID for key owner identification - Save output to file
-#          copy:
-#            content: '{{ guid.stdout }}'
-#            dest: /root/GUID.txt
-##############################################################################################
-#
-#      package:
-#        name:
-#          #- noto-fonts
-#          #- ttf-inconsolata
-#          #- ttf-liberation
-#          #- ttf-joypixels
-#          #- ttf-dejavu
-#          #- ttf-font-awesome
-          # TODO: is acpi needed on desktop or laptop only?
-#          #- acpi
-#          #- bat
-#          #- dash
-#          #- zathura
-#
-# DOTFILES PLAYBOOK IDEAS
-# TODO: prevent data loss - ensure that here are aliases set for rm, mv and cp with the '-i' flag that requires confirmation before executing command
-# TODO: Read through Archwiki general recommendations page for additional configuration
-# TODO: checkout coreutils improvements / alternatives from archwiki - saerch for wechiwiki core utilities
-# TODO: checkout base9 from suckless and explore possibilities of using it along / instead of coreustils GNU
-
 - name: Localization settings
-  tags: done
   block:
     - name: Set timezone
       timezone:
         name: '{{ region }}/{{ city }}'
         hwclock: local
 
-    # TODO: create a pull request to the locale_gen.py ansible module. 
-    # Fix invalid regex on arch linux and locales not being checked while available with locale -a command
-    # https://github.com/ansible-collections/community.general/blob/main/plugins/modules/system/locale_gen.py
+    - name: Remove unnecessary lines from locale.gen file
+      lineinfile:
+        path: /etc/locale.gen
+        regexp: "#\\s+"
+        state: absent
+
     - name: Generate locales
       locale_gen:
         name: '{{ item }}'
       loop:
         - en_US.UTF-8
-        - '{{ country|lower }}_{{ country }}.UTF-8'
+        - "{{ country|lower + '_' + country + '.UTF-8' }}"
 
     - name: Create locale.conf
       lineinfile:
         create: yes
-        dest: /etc/locale.conf
+        path: /etc/locale.conf
         regexp: LANG=en_US\.UTF-8
         line: LANG=en_US.UTF-8
     
     - name: Create vconsole.conf
       blockinfile:
         create: yes
-        dest: /etc/vconsole.conf
+        path: /etc/vconsole.conf
         block: |
-          'KEYMAP={{ country|lower }}'
+          KEYMAP={{ country|lower }}
           FONT=Lat2-Terminus16
           FONT_MAP=8859-2
 
-    # TODO: check the hostname module
-    - name: Set hostname
-      lineinfile:
-        create: yes
-        dest: /etc/hostname
-        line: '{{ hostname }}'
+    - name: Set a hostname
+      hostname:
+        name: '{{ hostname }}'
 
 - name: User configuration
-  tags: done
   block:
-# TODO: check if all the groups are necessary / need to add more
-# TODO: shell specification?
-    - name: Create system user
+    - name: Create user
       user:
         name: "{{ user_username }}"
         groups:
@@ -112,20 +66,26 @@
 
 - name: Package management
   block:
-    # TODO: reflector --fastest 5 --country pl --age 12 --protocol https --sort rate --ipv4
-    # TODO: this task should be added to the cronjob and performed once a week / a month (find the optimal schedule)
-    - name: Download mirrorlist
-      get_url:
-        url: 'https://archlinux.org/mirrorlist/?country={{ country }}&ip_version=4&protocol=https&use_mirror_status=on'
-        dest: /etc/pacman.d/mirrorlist
-        force: yes
-    
-    - name: Uncomment mirrors
-      replace:
-        path: /etc/pacman.d/mirrorlist
-        regexp: '##.*\n#Server'
-        replace: 'Server'
-    
+    - name: Install reflector
+      package:
+        name:
+          - reflector
+
+    - name: Configure reflector
+      lineinfile:
+        path: /etc/xdg/reflector/reflector.conf
+        regexp: '{{ item.regex }}'
+        line: '{{ item.line }}'
+      loop:
+        - {regex: "^#*\\s*--country", line: "{{ '--country ' + country|lower }}" }
+        - {regex: "^#*\\s*--protocol", line: "--protocol https" }
+        - {regex: "^#*\\s*--sort", line: "--sort rate" }
+
+    - name: Rank mirrors
+      systemd:
+        name: reflector
+        state: started
+
     - name: Enabel multilib repository and change pacman configuration options
       lineinfile:
         dest: /etc/pacman.conf
@@ -137,6 +97,7 @@
         - {regex: Color, line: Color, insertafter: }
         - {regex: ILoveCandy, line: ILoveCandy, insertafter: Color}
         - {regex: ParallelDownloads, line: ParallelDownloads = 5, insertafter: }
+        - {regex: NoExtract, line: NoExtract = mirrorlist.pacnew, insertafter: }
         - {regex: '^#\[multilib\]$', line: '[multilib]', insertafter: }
         - {regex: Include = /etc/pacman.d/mirrorlist, line: Include = /etc/pacman.d/mirrorlist, insertafter: [multilib] }
 
@@ -145,8 +106,7 @@
         update_cache: yes
         upgrade: yes
     
-    - name: Install essential packages
-      tags: long
+    - name: Install packages
       package:
         name:
           - git
@@ -158,19 +118,17 @@
           - pkgfile
         state: present
 
-    - name: Enable a pkgfile timer unit
+    - name: Synchronize pkgfile database
       systemd:
-        name: pkgfile-update.timer
+        name: pkgfile-update
         state: started
-        enabled: yes
 
-        # - name: Create pkgfile database
-        #   command: pkgfile -u
-    
-    - name: Install AUR helper
-      become: yes
-      become_user: '{{ user_username }}'
-      aur:
-        name: yay
-        use: makepkg
-        state: present
+- name: Systemd configuration
+  block:
+    - name: Enable service timer units
+      systemd:
+        name: '{{ item }}'
+        enabled: yes
+      loop:
+        - reflector.timer
+        - pkgfile-update.timer
