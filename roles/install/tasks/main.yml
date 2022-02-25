@@ -1,21 +1,40 @@
-# TODO: check if possible to select microcode package (intel-ucode / amd-ucode) based on gathered facts (intel / amd processor)
-# TODO: Add optional disk shred task before partitioning
-# TODO: when reviewing hardening possibilities consider adding a /tmp partition (1GB?) with nosuid etc options
+---
+- name: Cleanup the disk and set variables
+  block:
+    - name: Overwrite disk with random data
+      command: shred -v --random-source=/dev/urandom -n1 /dev/{{ drive }}
+      when: shred
 
-- name: Partition the disks
+    - name: Erase data structures from the partitions
+      command: wipefs -a "/dev/{{ item }}"
+      loop: "{{ ansible_devices[drive].partitions.keys() }}"
+
+    - name: Erase data structures from the disk
+      command: wipefs -a "/dev/{{ drive }}"
+
+    - name: Initialize empty list
+      set_fact:
+        partitions: []
+        vg_uuid: []
+        part_uuid: []
+
+    - name: Get processor architecture
+      set_fact:
+        proc: "{{ item|regex_replace( '^.*(Intel|AMD)', '\\1' ) | lower }}"
+      with_items: "{{ ansible_processor }}"
+      when: "item.endswith('Intel') or
+             item.endswith('AMD')"
+
+- name: Partition the disk
   block:
     - name: Create EFI partition
-      command: sgdisk -n 1:0:551M -c 1:BOOT -t 1:ef00 '/dev/{{ drive }}'
+      command: sgdisk -n 1:0:551M -c 1:BOOT -t 1:ef00 "/dev/{{ drive }}"
 
     - name: Create LUKS partition
-      command: sgdisk -n 0:0:0 -c 0:LUKS -t 0:8309 '/dev/{{ drive }}'
+      command: sgdisk -n 0:0:0 -c 0:LUKS -t 0:8309 "/dev/{{ drive }}"
 
     - name: Update gathered facts
       setup:
-
-    - name: Initialize empty partition list
-      set_fact:
-        partitions: []
 
     - name: Get selected drive partitions
       set_fact:
@@ -26,8 +45,8 @@
   block:
     - name: Setup LUKS container
       luks_device:
-        device: '/dev/{{ partitions[1] }}'
-        passphrase: '{{ luks_password }}'
+        device: "/dev/{{ partitions[1] }}"
+        passphrase: "{{ luks_password }}"
         type: luks1
         pbkdf: 
           iteration_count: 420997
@@ -42,9 +61,9 @@
 
     - name: Setup logical volumes
       lvol:
-        vg: '{{ item.vg }}'
-        lv: '{{ item.lv }}'
-        size: '{{ item.size }}'
+        vg: "{{ item.vg }}"
+        lv: "{{ item.lv }}"
+        size: "{{ item.size }}"
         force: yes
       loop:
         - {vg: vg, lv: swap, size: 16G}
@@ -56,12 +75,12 @@
                 
 - name: Format the partitions
   filesystem:
-    dev: '{{ item.dev }}'
-    fstype: '{{ item.fstype }}'
-    opts: '{{ item.opts }}'
+    dev: "{{ item.dev }}"
+    fstype: "{{ item.fstype }}"
+    opts: "{{ item.opts }}"
     force: yes
   loop:
-    - {dev: '/dev/{{ partitions[0] }}', fstype: vfat, opts: -F32}
+    - {dev: "/dev/{{ partitions[0] }}", fstype: vfat, opts: -F32}
     - {dev: /dev/mapper/vg-swap, fstype: swap, opts: }
     - {dev: /dev/mapper/vg-root, fstype: ext4, opts: }
     - {dev: /dev/mapper/vg-var, fstype: ext4, opts: }
@@ -74,16 +93,11 @@
     - name: Update gathered facts
       setup:
 
-    - name: Initialize empty uuid list
-      set_fact:
-        vg_uuid: []
-        part_uuid: []
-
     - name: Get vg_uuids
       set_fact:
         vg_uuid: "{{ vg_uuid + item.value }}"
       with_dict: "{{ ansible_device_links.uuids }}"
-      when: item.key.startswith('dm')
+      when: item.key.startswith("dm")
   
     - name: Get part_uuids
       set_fact:
@@ -91,35 +105,29 @@
       with_dict: "{{ ansible_device_links.uuids }}"
       when: item.key.startswith(drive)
   
-    - name: show uuids
-      debug: var=vg_uuid
-
-    - name: show uuids
-      debug: var=part_uuid
-
     - name: Enable swap volume
-      command: swapon -U '{{ vg_uuid[5] }}'
+      command: swapon -U "{{ vg_uuid[5] }}"
 
     - name: Mount logical volumes
       mount:
-        path: '{{ item.path }}'
-        src: 'UUID={{ item.uuid }}'
-        fstype: '{{ item.fs }}'
+        path: "{{ item.path }}"
+        src: "UUID={{ item.uuid }}"
+        fstype: "{{ item.fs }}"
         state: mounted
-        passno: '{{ item.passno }}'
+        passno: "{{ item.passno }}"
       loop:
-        - {path: /mnt, uuid: '{{ vg_uuid[4] }}', fs: ext4, passno: 1}
-        - {path: /mnt/efi, uuid: '{{ part_uuid[0] }}', fs: vfat, passno: 2}
-        - {path: /mnt/home, uuid: '{{ vg_uuid[0] }}', fs: ext4, passno: 2}
-        - {path: /mnt/var, uuid: '{{ vg_uuid[3] }}', fs: ext4, passno: 2}
-        - {path: /mnt/var/log, uuid: '{{ vg_uuid[2] }}', fs: ext4, passno: 2}
-        - {path: /mnt/var/tmp, uuid: '{{ vg_uuid[1] }}', fs: ext4, passno: 2}
+        - {path: /mnt, uuid: "{{ vg_uuid[4] }}", fs: ext4, passno: 1}
+        - {path: /mnt/efi, uuid: "{{ part_uuid[0] }}", fs: vfat, passno: 2}
+        - {path: /mnt/home, uuid: "{{ vg_uuid[0] }}", fs: ext4, passno: 2}
+        - {path: /mnt/var, uuid: "{{ vg_uuid[3] }}", fs: ext4, passno: 2}
+        - {path: /mnt/var/log, uuid: "{{ vg_uuid[2] }}", fs: ext4, passno: 2}
+        - {path: /mnt/var/tmp, uuid: "{{ vg_uuid[1] }}", fs: ext4, passno: 2}
 
 - name: Select mirrors
   block:
     - name: Download mirrorlist
       get_url:
-        url: 'https://archlinux.org/mirrorlist/?country={{ country }}&ip_version=4&use_mirror_status=on'
+        url: "https://archlinux.org/mirrorlist/?country={{ country }}&ip_version=4&use_mirror_status=on"
         dest: /etc/pacman.d/mirrorlist
         force: yes
     
@@ -130,7 +138,7 @@
         replace: Server
 
 - name: Install essential packages
-  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub '{{ proc }}'-ucode openssh python sudo
+  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub openssh python sudo "{{ proc }}-ucode" "{{ wireless_utility if wireless else 'base' }}"
 
 - name: Generate fstab
   block:
@@ -140,7 +148,7 @@
     
     - name: Generate fstab - Save output to file
       copy:
-        content: '{{ fstab.stdout }}'
+        content: "{{ fstab.stdout }}"
         dest: /mnt/etc/fstab
 
 - name: Generate LUKS decryption key
@@ -161,8 +169,8 @@
 
     - name: Add keyfile to the LUKS container
       luks_device:
-        device: '/dev/{{ partitions[1] }}'
-        passphrase: '{{ luks_password }}'
+        device: "/dev/{{ partitions[1] }}"
+        passphrase: "{{ luks_password }}"
         new_keyfile: /mnt/root/secrets/luks-crypt.bin
         pbkdf: 
           iteration_count: 420997
@@ -172,8 +180,8 @@
     - name: Add hooks and keyfile path to mkinitcpio.conf 
       lineinfile:
         dest: /mnt/etc/mkinitcpio.conf
-        regexp: '{{ item.regex }}'
-        line: '{{ item.line }}'
+        regexp: "{{ item.regex }}"
+        line: "{{ item.line }}"
       loop:
         - {regex: ^HOOKS=, line: HOOKS=(base udev autodetect keyboard keymap modconf block encrypt lvm2 filesystems fsck)}
         - {regex: ^FILES=, line: FILES=(/root/secrets/luks-crypt.bin)}
@@ -183,17 +191,18 @@
 
 - name: Configure and install bootloader
   block:
-    - name: Set kernel parameters
+    - name: Set kernel parameters and configure grub
       lineinfile:
         dest: /mnt/etc/default/grub
-        regexp: '{{ item.regex }}'
-        line: '{{ item.line }}'
+        regexp: "{{ item.regex }}"
+        line: "{{ item.line }}"
       loop:
-        - {regex: GRUB_CMDLINE_LINUX=, line: 'GRUB_CMDLINE_LINUX="cryptdevice=UUID={{ part_uuid[1] }}:cryptlvm resume=UUID={{ part_uuid[1] }} cryptkey=rootfs:/root/secrets/luks-crypt.bin"'}
-        - {regex: GRUB_CMDLINE_LINUX_DEFAULT=, line: 'GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet net.ifnames=0"'}
+        - {regex: GRUB_CMDLINE_LINUX=, line: "GRUB_CMDLINE_LINUX='cryptdevice=UUID={{ part_uuid[1] }}:cryptlvm resume=UUID={{ part_uuid[1] }} cryptkey=rootfs:/root/secrets/luks-crypt.bin'"}
+        - {regex: GRUB_CMDLINE_LINUX_DEFAULT=, line: "GRUB_CMDLINE_LINUX_DEFAULT='loglevel=3 quiet net.ifnames=0'"}
         - {regex: GRUB_ENABLE_CRYPTODISK=, line: GRUB_ENABLE_CRYPTODISK=y}
+        - {regex: GRUB_TIMEOUT=, line: GRUB_TIMEOUT=0}
 
-    - name: Configure grub
+    - name: Install bootloader
       command: arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
 
     - name: Generate grub config
@@ -210,11 +219,18 @@
     - name: Enable network services
       command: arch-chroot /mnt systemctl enable systemd-networkd systemd-resolved sshd
 
+    - name: Link /etc/resolv.conf for compatibility with older Linux applications
+      file:
+        src: /run/systemd/resolve/resolv.conf
+        path: /mnt/etc/resolv.conf
+        state: link
+        force: yes
+
     - name: Change wait-online service to wait for any interface
       lineinfile:
         path: /mnt/usr/lib/systemd/system/systemd-networkd-wait-online.service
-        regexp: 'ExecStart='
-        line: 'ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --any'
+        regexp: "ExecStart="
+        line: "ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --any"
 
     - name: Configure wired adapter
       blockinfile: 
@@ -229,22 +245,23 @@
 
           [DHCPv4]
           RouteMetric=10
-      when: wired_adapter
 
     - name: Configure wireless adapter
-      blockinfile: 
-        path: /mnt/etc/systemd/network/25-wireless.network
-        create: true
-        block: |
-          [Match]
-          Name=wlan0
-          
-          [Network]
-          DHCP=yes
-          
-          [DHCPv4]
-          RouteMetric=20
-      when: wireless_adapter
+      block:
+        - name: Configure wireless adapter
+          blockinfile: 
+            path: /mnt/etc/systemd/network/25-wireless.network
+            create: true
+            block: |
+              [Match]
+              Name=wlan0
+              
+              [Network]
+              DHCP=yes
+              
+              [DHCPv4]
+              RouteMetric=20
+      when: wireless
 
     - name: Set root password
       command: arch-chroot /mnt usermod -p "{{ root_password | password_hash('sha512') }}" root
@@ -252,5 +269,5 @@
     - name: Allow root login via ssh
       lineinfile:
         dest: /mnt/etc/ssh/sshd_config
-        regexp: '^#PermitRootLogin'
-        line: 'PermitRootLogin yes'
+        regexp: "^#PermitRootLogin"
+        line: "PermitRootLogin yes"

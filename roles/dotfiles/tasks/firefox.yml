@@ -1,6 +1,6 @@
 - name: Firefox - Install packages
   become: yes
-  package:
+  pacman:
     name: 
       - firefox
     state: present

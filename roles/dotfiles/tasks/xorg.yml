@@ -1,6 +1,6 @@
 - name: Xorg - Install packages
   become: yes
-  package:
+  pacman:
     name: 
       - xorg
       - xorg-xinit
@@ -11,7 +11,7 @@
 # TODO: fix for amd and nvidia drivers (current setup works for intel)
 - name: Xorg - Install GPU drivers
   become: yes
-  package:
+  pacman:
     name: 
       - mesa
       - lib32-mesa

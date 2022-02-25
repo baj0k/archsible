@@ -1,6 +1,6 @@
 - name: Dunst - Install packages
   become: yes
-  package:
+  pacman:
     name: 
       - dunst
       - libnotify

@@ -1,6 +1,6 @@
 - name: Zsh - Install packages
   become: yes
-  package:
+  pacman:
     name:
       - zsh
       - zsh-completions

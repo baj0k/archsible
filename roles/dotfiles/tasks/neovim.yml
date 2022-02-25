@@ -1,6 +1,6 @@
 - name: Neovim - Install packages
   become: yes
-  package:
+  pacman:
     name: 
       - neovim
     state: present

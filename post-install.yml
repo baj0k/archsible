@@ -5,12 +5,19 @@
     # Include hardening tasks
     hardening: false
 
+    # Configure blackarch repository
+    blackarch: true
+
+    # Configure audio & bluetooth
+    audio: true
+
     # Localization Settings
     region: Europe
     country: PL
     city: Warsaw
 
     # Self explanatory
+    aur_helper: yay
     hostname: TEST
     user_username: test
     user_password: test
@@ -29,14 +36,8 @@
         name: hardening
       when: hardening
   
-    # TODO: move to dotfiles
-    - name: Disable sshd.service
-      systemd:
-        name: sshd
-        enabled: no
-
-          # - name: Reboot after installation is complete
-          #   shell: sleep 2 && reboot
-          #   async: 5
-          #   poll: 0
-          # - meta: end_host
+    - name: Reboot after installation is complete
+      shell: sleep 2 && reboot
+      async: 5
+      poll: 0
+    - meta: end_host

@@ -1,29 +1,11 @@
-# TODO: Manual tasks:
-#       install libxft-bgra (no option to automatically resolve pacman conflict )
-#
-#
+# TODO: Manual tasks: (maybe uninstall conflicting packages? must be a way to ignore dependency)       install libxft-bgra (no option to automatically resolve pacman conflict )
 # TODO: fix sb makefiles to cleanup after installation
-# TODO: check docker setup
-
-# TODO: check if there is a difference between linking directory and linking all files inside directory in a loop
+# TODO: consider linking all files inside directory in a loop instead of linking directory
 # TODO: compare files in repo with currently used on desktop and update if necessary
-        # TODO: move to dotfiles
-        #    - name: Install AUR helper
-        #      become: yes
-        #      become_user: '{{ user_username }}'
-        #      aur:
-        #        name: yay
-        #        use: makepkg
-        #        state: present
-#      package:
-#        name:
-          # TODO: is acpi needed on desktop or laptop only?
+# TODO: is acpi needed on desktop or laptop only?
 #          #- acpi
-#          #- bat
 #          #- dash
-#          #- zathura
-#
-
+---
 - name: Workspace setup
   block:
     - name: Create workspace directories
@@ -39,48 +21,64 @@
         - "~/fieldwork"
         - "~/music"
         - "~/pictures"
-        - "{{ repo_path }}"
+        - "~/repos"
         - "~/tmp"
         - "~/videos"
-    
+
     - name: Clone archsible repository
       git:
         repo: https://github.com/baj0k/archsible.git
-        dest: '{{ repo_path }}/archsible'
+        dest: "{{ repo_path }}/archsible"
 
-- name: Include conditional tasks - User
-  include_tasks: '{{ item }}'
-  when: user
-  loop:
-    - user.yml
+    - name: Symlink user-dirs.dirs
+      file:
+        src: "{{ dotfiles_path }}/user-dirs.dirs"
+        path: "~/.config/user-dirs.dirs"
+        state: link
 
-- name: Include conditional tasks - System
-  include_tasks: '{{ item.tasks }}'
+    - name: Symlink locale.conf
+      file:
+        src: "{{ dotfiles_path }}/locale.conf"
+        path: "~/.config/locale.conf"
+        state: link
+
+    - name: Symlink local scripts
+      file:
+        src: "{{ dotfiles_path }}/bin"
+        path: "~/.local/bin"
+        state: link
+
+    - name: Install essential packages
+      become: yes
+      pacman:
+        name: 
+          - bat
+        state: present
+        
+- name: Include conditional software tasks
+  include_tasks: "{{ item.tasks }}"
   when: item.when
   loop:
-    # TODO: consider moving all below to post-install
-    - { tasks: blackarch.yml, when: '{{ blackarch }}' }
-    - { tasks: bluetooth.yml, when: '{{ bluetooth }}' }
+    - { tasks: docker.yml, when: "{{ docker }}" }
+    - { tasks: dunst.yml, when: "{{ dunst }}" }
+      # TODO: add profile creation / migration and symlink chrome.css and user.js
+    - { tasks: firefox.yml, when: "{{ firefox }}" }
+    - { tasks: i3.yml, when: "{{ i3 }}" }
+    - { tasks: mpd.yml, when: "{{ mpd }}" }
+    - { tasks: mpv.yml, when: "{{ mpv }}" }
+    - { tasks: ncmpcpp.yml, when: "{{ ncmpcpp }}" }
+    - { tasks: neofetch.yml, when: "{{ neofetch }}" }
+    - { tasks: newsboat.yml, when: "{{ newsboat }}" } # TODO: cleanup urls
+    - { tasks: neovim.yml, when: "{{ neovim }}" }   # TODO: Check plugins (fix the healthcheck provider issue)
+    - { tasks: ranger.yml, when: "{{ ranger }}" }   # TODO: update configuration files, use: ranger --copy-config all
+    - { tasks: suckless.yml, when: "{{ suckless }}" }
+    - { tasks: tmux.yml, when: "{{ tmux }}" }
+    - { tasks: xorg.yml, when: "{{ i3 }}" }
+    - { tasks: zathura.yml, when: "{{ zathura }}" }
+    - { tasks: zsh.yml, when: "{{ zsh }}" }
 
-- name: Include conditional tasks - Software
-  include_tasks: '{{ item.tasks }}'
-  when: item.when
+- name: Include migration tasks
+  include_tasks: "{{ item }}"
+  when: migrate
   loop:
-    - { tasks: dunst.yml, when: '{{ dunst }}' }
-    - { tasks: docker.yml, when: '{{ docker }}' }
-    - { tasks: firefox.yml, when: '{{ firefox }}' }
-    - { tasks: i3.yml, when: '{{ i3 }}' }
-    - { tasks: mpd.yml, when: '{{ mpd }}' }
-    - { tasks: mpv.yml, when: '{{ mpv }}' }
-    - { tasks: ncmpcpp.yml, when: '{{ ncmpcpp }}' }
-    - { tasks: neofetch.yml, when: '{{ neofetch }}' } # TODO: consider removing
-    - { tasks: newsboat.yml, when: '{{ newsboat }}' } # TODO: cleanup urls
-    - { tasks: neovim.yml, when: '{{ neovim }}' }   # TODO: Check plugins (fix the healthcheck provider issue)
-    - { tasks: ranger.yml, when: '{{ ranger }}' }   # TODO: update configuration files, use: ranger --copy-config all
-    - { tasks: suckless.yml, when: '{{ suckless }}' }
-    - { tasks: tmux.yml, when: '{{ tmux }}' }
-    - { tasks: xorg.yml, when: '{{ i3 }}' }
-    - { tasks: zathura.yml, when: '{{ zathura }}' }
-    - { tasks: zsh.yml, when: '{{ zsh }}' }
-
-      # TODO: add crontab task (checkout if systemd timers are better)
+    - migrate.yml

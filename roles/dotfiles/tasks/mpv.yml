@@ -1,6 +1,6 @@
 - name: Mpv - Install packages
   become: yes
-  package:
+  pacman:
     name: 
       - mpv
       - yt-dlp

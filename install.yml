@@ -5,15 +5,15 @@
     # Mirrorlist country code
     country: PL
 
-    # Processor vendor [intel / amd]
-    proc: intel
-
     # Drive to which the system will be installed
     drive: nvme0n1
 
-    # Network interfaces
-    wired_adapter: true
-    wireless_adapter: true
+    # Set to true if you want to overwrite disk with random data
+    shred: false
+
+    # Configure wireless adapter
+    wireless: false
+    wireless_utility: iwd
 
     # Password configuration
     luks_password: test
@@ -29,24 +29,6 @@
     - name: Check internet connection
       command: ping -c 1 -w 1 google.com
       changed_when: False
-
-# TODO: Remove after implementing shred task
-    - name: Remove existing data
-      block:
-        - name: Remove the volume group and physical volume
-          lvg:
-            vg: vg
-            pvs: /dev/mapper/cryptlvm
-            state: absent
-            force: yes
-    
-        - name: Remove the LUKS container
-          luks_device:
-            name: cryptlvm
-            state: absent
-    
-        - name: Erase GPT structures from the disk
-          command: sgdisk -Z '/dev/{{ drive }}'
 
   roles:
     - install

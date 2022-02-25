@@ -1,6 +1,6 @@
 - name: Mpd - Install packages
   become: yes
-  package:
+  pacman:
     name: 
       - mpd
     state: present

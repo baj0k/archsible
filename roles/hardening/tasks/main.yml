@@ -1,4 +1,5 @@
-# TODO: possible security prevention - use UEFI secure boot to sign the bootloader with user's own keys
+# TODO: use UEFI secure boot to sign the bootloader with user's own keys (Evil Maid prevention)
+---
 - name: Install additional packages
   pacman:
     update_cache: yes

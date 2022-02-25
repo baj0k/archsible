@@ -9,20 +9,19 @@ Playbooks in this repository are designed to ease the installation, configuratio
 
 # Prerequisites
 - UEFI support enabled
-- Secure Boot disabled
-- Run ansible-galaxy collection install -r requirements.yml in order to install required additional modules
 
 # Usage
 - Modify hosts file according to your needs
 - Modify variables inside the playbooks
-
-Boot the installation medium and execute following commands on the live system:
-$ passwd
-$ systemctl start sshd
+- Boot the Arch Linux installation medium on target machine and set the root password with passwd command
 
 Run the install.yml playbook with:
 $ ansible-playbook install.yml -i hosts --ask-pass
 
+Important information:
+- The LUKS1 format is used because grub doesn't yet support LUKS2 format. This should be changed if the situation changes.
+- Any installation tasks that are done in chroot are using a command ansible module. This is due to the current lack of possibility to execute ansible playbooks in the remote chroot.
+- Ansible currently doesn't allow undefined variables. The install.yml playbook implements a workaround in pacstrap command at should be chenged as soon as ansible provides a clear way of unsetting variables
 
 # Full disk encryption
 This setup utilizes the LVM on LUKS scenario using a single physical disk with two partitions.
@@ -32,10 +31,6 @@ The LUKS partition stores an encrypted LUKS container which is decrypted automat
 How it works:
 After the machine is powered on, the bootloader (GRUB) asks for a passphrase to be unlocked and executed.
 Bootloader takes the kernel image and the initramfs which are used to bring up the rest of the system. In the initramfs, the path to the unencrypted key is stored which allows automatic decryption of the LUKS container during boot.
-
-Important information:
-- The LUKS1 format is used because grub doesn't yet support LUKS2 format. This should be changed if the situation changes.
-- Any installation tasks that are done in chroot are using a command ansible module. This is due to the current lack of possibility to execute ansible playbooks in the remote chroot.
 
 Security considerations:
 - With an encrypted boot partition, there is no option to modify user's kernel image or initramfs, but it would be still vulnerable to Evil Maid attacks.

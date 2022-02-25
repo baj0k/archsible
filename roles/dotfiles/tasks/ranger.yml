@@ -1,6 +1,6 @@
 - name: Ranger - Install packages
   become: yes
-  package:
+  pacman:
     name: 
       - ranger
       - ueberzug

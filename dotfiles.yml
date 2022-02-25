@@ -1,39 +1,35 @@
-# TODO: prevent data loss - ensure that here are aliases set for rm, mv and cp with the '-i' flag that requires confirmation before executing command
+# TODO: prevent data loss - ensure that here are aliases set for rm, mv and cp with the "-i" flag that requires confirmation before executing command
 # TODO: Read through Archwiki general recommendations page for additional configuration
 # TODO: checkout coreutils improvements / alternatives from archwiki - saerch for wechiwiki core utilities
 # TODO: checkout base9 from suckless and explore possibilities of using it along / instead of coreustils GNU
+# TODO: add git config and move sensitive data to another file
 ---
 - hosts: workstations
   remote_user: test
 
   vars:
     # Path for the repository and dotfiles
-    repo_path: '{{ ansible_env.HOME }}/repos/'
-    dotfiles_path: '{{ repo_path }}/archsible/roles/dotfiles/files'
+    repo_path: "{{ ansible_env.HOME }}/repos"
+    dotfiles_path: "{{ repo_path }}/archsible/roles/dotfiles/files"
 
-    # Include user tasks
-    user: true
+    # Copy environment from the ansible controller
     migrate: false
 
-    # Include system tasks
-    blackarch: false # TODO: blackarch tasks require fix
-    bluetooth: false # TODO: bluetooth tasks require fix
-
     # Include software tasks
-    dunst: false
-    docker: false
+    docker: true
+    dunst: true
     firefox: true # TODO: add symlinks for user.js 
     i3: true
-    mpd: false
-    mpv: false
-    ncmpcpp: false
-    neofetch: false
-    newsboat: false
+    mpd: true
+    mpv: true
+    ncmpcpp: true
+    neofetch: true
+    newsboat: true
     neovim: true
     ranger: true
     suckless: true
-    tmux: false
-    zathura: false
+    tmux: true
+    zathura: true
     zsh: true
 
   pre_tasks:
@@ -45,9 +41,15 @@
     - dotfiles
   
   post_tasks:
-#    - name: Reboot after installation is complete
-#      become: yes
-#      shell: sleep 2 && reboot
-#      async: 5
-#      poll: 0
-#    - meta: end_host
+     - name: Disable sshd.service
+       become: yes
+       systemd:
+         name: sshd
+         enabled: no
+
+     - name: Reboot after installation is complete
+       become: yes
+       shell: sleep 2 && reboot
+       async: 5
+       poll: 0
+     - meta: end_host

@@ -1,6 +1,6 @@
 - name: Ncmpcpp - Install packages
   become: yes
-  package:
+  pacman:
     name: 
       - ncmpcpp
     state: present

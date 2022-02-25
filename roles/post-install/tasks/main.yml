@@ -1,8 +1,10 @@
+---
 - name: Localization settings
   block:
+    # TODO: check timedatectl status after installtion and fix
     - name: Set timezone
       timezone:
-        name: '{{ region }}/{{ city }}'
+        name: "{{ region }}/{{ city }}"
         hwclock: local
 
     - name: Remove unnecessary lines from locale.gen file
@@ -13,7 +15,7 @@
 
     - name: Generate locales
       locale_gen:
-        name: '{{ item }}'
+        name: "{{ item }}"
       loop:
         - en_US.UTF-8
         - "{{ country|lower + '_' + country + '.UTF-8' }}"
@@ -36,7 +38,7 @@
 
     - name: Set a hostname
       hostname:
-        name: '{{ hostname }}'
+        name: "{{ hostname }}"
 
 - name: User configuration
   block:
@@ -60,22 +62,34 @@
       lineinfile:
         path: /etc/sudoers
         state: present
-        regexp: '%wheel ALL='
-        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
-        validate: '/usr/sbin/visudo --check --file=%s'
+        regexp: "%wheel ALL="
+        line: "%wheel ALL=(ALL) NOPASSWD: ALL"
+        validate: "/usr/sbin/visudo --check --file=%s"
+
+- name: Blackarch configuration
+  block:
+    - name: Download blackarch setup script
+      get_url:
+        url: https://blackarch.org/strap.sh
+        dest: /tmp/strap.sh
+        
+    - name: Setup blackarch repository
+      command: "sh /tmp/strap.sh"
+
+  when: blackarch
 
 - name: Package management
   block:
     - name: Install reflector
-      package:
+      pacman:
         name:
           - reflector
 
     - name: Configure reflector
       lineinfile:
         path: /etc/xdg/reflector/reflector.conf
-        regexp: '{{ item.regex }}'
-        line: '{{ item.line }}'
+        regexp: "{{ item.regex }}"
+        line: "{{ item.line }}"
       loop:
         - {regex: "^#*\\s*--country", line: "{{ '--country ' + country|lower }}" }
         - {regex: "^#*\\s*--protocol", line: "--protocol https" }
@@ -89,16 +103,16 @@
     - name: Enabel multilib repository and change pacman configuration options
       lineinfile:
         dest: /etc/pacman.conf
-        regexp: '{{ item.regex }}'
-        line: '{{ item.line }}'
-        insertafter: '{{ item.insertafter }}'
+        regexp: "{{ item.regex }}"
+        line: "{{ item.line }}"
+        insertafter: "{{ item.insertafter }}"
       loop:
         - {regex: Architecture, line: Architecture = x86_64, insertafter: }
         - {regex: Color, line: Color, insertafter: }
         - {regex: ILoveCandy, line: ILoveCandy, insertafter: Color}
         - {regex: ParallelDownloads, line: ParallelDownloads = 5, insertafter: }
         - {regex: NoExtract, line: NoExtract = mirrorlist.pacnew, insertafter: }
-        - {regex: '^#\[multilib\]$', line: '[multilib]', insertafter: }
+        - {regex: '^#\[multilib\]$', line: [multilib], insertafter: }
         - {regex: Include = /etc/pacman.d/mirrorlist, line: Include = /etc/pacman.d/mirrorlist, insertafter: [multilib] }
 
     - name: Update system
@@ -107,7 +121,7 @@
         upgrade: yes
     
     - name: Install packages
-      package:
+      pacman:
         name:
           - git
           - wget
@@ -123,11 +137,66 @@
         name: pkgfile-update
         state: started
 
+- name: Install AUR helper
+  block:
+    - name: Clone AUR helper repository
+      git:
+        repo: "https://aur.archlinux.org/{{ aur_helper }}.git"
+        dest: "/tmp/{{ aur_helper }}"
+
+    - name: Build AUR helper package
+      become: yes
+      become_user: "{{ user_username }}"
+      command:
+        cmd: makepkg -sric --noconfirm
+        chdir: "/tmp/{{ aur_helper }}"
+
+- name: Audio configuration
+  block:
+    - name: Install audio related packages
+      pacman:
+        name: 
+          - pipewire
+          - lib32-pipewire
+          - wireplumber
+          - pipewire-alsa
+          - pipewire-pulse
+          - pipewire-jack
+          - lib32-pipewire-jack
+        state: present
+
+    - name: Install bluetooth related packages
+      pacman:
+        name: 
+          - bluez
+          - bluez-utils
+          - blueman
+          - bluez-hid2hci
+        state: present
+    
+    - name: Enable btusb module
+      modprobe:
+        name: btusb
+        state: present
+    
+    - name: Enable bluetooth daemon
+      systemd:
+        name: bluetooth
+        state: started
+        enabled: yes
+
+    - name: Auto power-on bluetooth on boot
+      lineinfile:
+        path: /etc/locale.conf
+        regexp: AutoEnable=
+        line: AutoEnable=true
+  when: audio
+
 - name: Systemd configuration
   block:
     - name: Enable service timer units
       systemd:
-        name: '{{ item }}'
+        name: "{{ item }}"
         enabled: yes
       loop:
         - reflector.timer

@@ -1,6 +1,6 @@
 - name: Zathura - Install packages
   become: yes
-  package:
+  pacman:
     name: 
       - zathura
       - zathura-pdf-mupdf

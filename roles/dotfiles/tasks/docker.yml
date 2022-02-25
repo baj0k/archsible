@@ -1,6 +1,6 @@
 - name: Docker - Install packages
   become: yes
-  package:
+  pacman:
     name: 
       - docker
       - docker-compose

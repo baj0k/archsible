@@ -1,6 +1,6 @@
 - name: i3 - Install packages
   become: yes
-  package:
+  pacman:
     name:
       - i3-gaps
       - i3blocks

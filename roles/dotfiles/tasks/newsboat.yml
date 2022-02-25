@@ -1,6 +1,6 @@
 - name: Newsboat - Install packages
   become: yes
-  package:
+  pacman:
     name: 
       - newsboat
     state: present
