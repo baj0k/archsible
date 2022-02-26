@@ -1,60 +1,46 @@
 #!/bin/sh
-
 # System maintenance
 alias kop='sudo $(fc -ln -1)'
-alias mdot='git --git-dir=$HOME/.local/dotfiles/ --work-tree=$HOME'
-alias off='sudo shutdown -h now'
-alias reboot='sudo shutdown -r now'
+alias off='sudo poweroff'
+alias reboot='sudo reboot'
 alias ssys='sudo systemctl'
-alias paux='ps -auxwf | grep'
 alias p='ping 1.1.1.1'
+alias cd..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../../'
-alias rmf='rm -rf'
+alias rmf='rm -rfiv'
 alias du='du -sh ./*/'
-alias build='sudo make clean install && sudo make clean'
+alias paux='ps -auxwf | grep'
 alias psg='ps -ef | grep -i $1'
 alias nsg='netstat -natp | grep -i $1'
 
 # Package maintenance
-alias aur='yay'
-alias syu='yay -Syyuu'
+alias syu='yay -Syu'
 alias sp='sudo pacman'
-alias S='sudo pacman -S'
-alias Rns='sudo pacman -Rns'
-alias Qs='sudo pacman -Qs'
-alias Ss='sudo pacman -Ss'
 
 # Default parameters 
 alias c='clear'
-alias l='ls -lhNF' 
-alias la='ls -ANF'
-alias ls='ls -hNF'
-alias ll='ls -AlhF'
-alias cd..='cd ..'
 alias cp='cp -iv'
-alias mv='mv -iv'
-alias rm='rm -v'
+alias diff='diff --color'
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias ip='ip -c'
+alias ls='ls -lhNF --color=auto --group-directories-first'
 alias mkdir='mkdir -pv'
 alias msfconsole='msfconsole -q'
+alias mv='mv -iv'
+alias rm='rm -iv'
 alias urlscan='urlscan -csH'
-alias hugoserv='hugo server -D --minify --disableFastRender'
-
-# XDG_CONFIG workarounds
-alias wget='wget --hsts-file="${XDG_CACHE_HOME}/wget-hsts"'
-alias tmux='tmux -f "$XDG_CONFIG_HOME/tmux/tmux.conf"'
-alias mbsync='mbsync -c "$XDG_CONFIG_HOME/isync/mbsyncrc"'
-alias tor-browser='setsid nohup tor-browser-en --dir=$XDG_CONFIG_HOME/tor > /tmp/tor-browsernohup.out 2>&1'
-alias weechat='weechat -d "$XDG_CONFIG_HOME/weechat"'
 
 # Program shortcuts
-alias a='alsamixer'
 alias cat='bat -pp'
 alias ga='git add'
 alias gc='git commit -m'
 alias gp='git push'
 alias gs='git status'
-alias m='neomutt'
+alias l='ls' 
+alias ll='ls -a'
 alias n='ncmpcpp 2>/dev/null'
 alias news='newsboat -q'
 alias o='rifle'
@@ -66,16 +52,16 @@ alias svp='sudo $EDITOR $_'
 alias pwgen='pass generate --clip'
 alias stream='ffmpeg -f x11grab -video_size 1920x1080 -framerate 25 -i $DISPLAY -f alsa -i default -c:v libx264 -preset ultrafast -c:a aac screen.mp4'
 alias z='setsid nohup zathura > /tmp/zathuranohup.out 2>&1'
+alias hugoserv='hugo server -D --minify --disableFastRender'
 
-# Colors
-alias ls='ls --color=auto --group-directories-first'
-alias dir='dir --color=auto'
-alias grep='grep --color=auto'
-alias egrep='egrep --color=auto'
-alias fgrep='fgrep --color=auto'
-alias ip='ip -c'
-alias diff='diff --color'
+# XDG_CONFIG workarounds
+alias wget='wget --hsts-file="${XDG_CACHE_HOME}/wget-hsts"'
+alias tmux='tmux -f "$XDG_CONFIG_HOME/tmux/tmux.conf"'
+alias mbsync='mbsync -c "$XDG_CONFIG_HOME/isync/mbsyncrc"'
+alias tor-browser='setsid nohup tor-browser-en --dir=$XDG_CONFIG_HOME/tor > /tmp/tor-browsernohup.out 2>&1'
+alias weechat='weechat -d "$XDG_CONFIG_HOME/weechat"'
 
+# Automatic file listing after changing directory
 cdls () { builtin cd "$@" && l; }
 alias cd='cdls'
 alias ..='cd ..'
@@ -89,10 +75,6 @@ man() {
     LESS_TERMCAP_us=$'\e[01;32m' \
     command man "$@"
 }
-
-# Youtube
-alias ytv='youtube-dl -o "~/video/%(title)s.%(ext)s" --restrict-filenames -ic -f best --hls-prefer-ffmpeg --add-metadata'
-alias yta='youtube-dl -o "~/music/%(artist)s-%(title)s.%(ext)s" --restrict-filenames -xic -f bestaudio/best --hls-prefer-ffmpeg --add-metadata'
 
 # Printer
 cupsadm() { "${BROWSER}" "http://localhost:631"; }

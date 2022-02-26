@@ -188,3 +188,7 @@
       loop:
         - reflector.timer
         - pkgfile-update.timer
+
+- name: Import the hardening role
+  include_tasks: hardening.yml
+  when: hardening

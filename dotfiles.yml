@@ -1,4 +1,3 @@
-# TODO: prevent data loss - ensure that here are aliases set for rm, mv and cp with the "-i" flag that requires confirmation before executing command
 # TODO: checkout coreutils improvements / alternatives from archwiki - saerch for wechiwiki core utilities
 # TODO: checkout base9 from suckless and explore possibilities of using it along / instead of coreustils GNU
 ---

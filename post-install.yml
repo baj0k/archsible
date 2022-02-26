@@ -3,7 +3,7 @@
   remote_user: root
   vars:
     # Include hardening tasks
-    hardening: false
+    hardening: true
 
     # Configure blackarch repository
     blackarch: false
@@ -30,11 +30,6 @@
     - post-install
 
   post_tasks:
-    - name: Import the hardening role
-      import_role:
-        name: hardening
-      when: hardening
-  
     - name: Reboot after installation is complete
       shell: sleep 2 && reboot
       async: 5
