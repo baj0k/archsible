@@ -5,6 +5,7 @@ xrdb -merge $XDG_CONFIG_HOME/xorg/Xresources &
 
 #Autostart 
 remap &
+xset s off -dpms &
 dunst &
 xcompmgr &
 autorandr --change &
@@ -12,6 +13,7 @@ firefox &
 blueman-applet &
 ssh proxy -N &
 signal-desktop --start-in-tray &
+birdtray &
 caprine --minimize &
 spotifyd --config-path .config/spotifyd/spotifyd.conf &
 discord --start-minimized &

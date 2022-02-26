@@ -2,12 +2,6 @@
 
 let mapleader = " "
 
-" Install vim-plug if not found
-if empty(glob('~/.local/share/nvim/site/autoload/plug.vim'))
-  silent !curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs
-    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-endif
-
 " Install missing plugins on startup
 autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
   \| PlugInstall --sync | source $MYVIMRC
@@ -35,7 +29,7 @@ autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
 	set viminfo="NONE"
 	syntax on
 
-" Spaces & Tabs {{{
+" Spaces & Tabs
     set tabstop=4      
     set softtabstop=4 
     set shiftwidth=4 
@@ -53,13 +47,20 @@ autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
 	map <C-k> <C-w>k
 	map <C-l> <C-w>l
 
+" Custom shortcuts:
+" Clear search highlight
+noremap <leader>/ :let @/ = ""<CR>
+
+" Open multiple files in new tabs
+command! -nargs=+ -complete=dir Tabnew argadd <args> | tab all
+
 " Shellcheck
     function AskForInput(x)
         redraw
         execute ":!clear && shellcheck -a --enable=all -s "a:x "-C'never' %"
     endfunction
 
-    noremap <leader>s :call AskForInput(input(""))<cr>
+    noremap <leader>s :call AskForInput(input(""))<CR>
 
 " Spell-Checking
     map <leader>l :setlocal spell!<CR>

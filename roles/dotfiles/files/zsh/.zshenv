@@ -33,6 +33,7 @@ export BUNDLE_USER_CONFIG="${XDG_CONFIG_HOME}/bundle"
 export I3BLOCKS_DIR="${XDG_CONFIG_HOME}/i3/i3blocks/blocks"
 export GTK2_RC_FILES="${XDG_CONFIG_HOME}/gtk-2.0/gtkrc"
 export MPD_HOST="${XDG_CONFIG_HOME}/mpd/socket"
+export XINITRC="${XDG_CONFIG_HOME}/xorg/xinitrc"
 
 # Data
 export NMBGIT="${XDG_DATA_HOME}/notmuch/nmbug"
@@ -43,6 +44,9 @@ export TERMINFO_DIRS="${XDG_DATA_HOME}/terminfo:/usr/share/terminfo"
 export PASSWORD_STORE_DIR="${XDG_DATA_HOME}/pass/password-store"
 export WINEPREFIX="${XDG_DATA_HOME}/wine"
 export BUNDLE_USER_PLUGIN="${XDG_DATA_HOME}/bundle"
+export RUSTUP_HOME="${XDG_DATA_HOME}/rustup"
+export CARGO_HOME="${XDG_DATA_HOME}/cargo"
+export WORDLISTS="${XDG_DATA_HOME}/wordlists"
 
 # Cache
 export GEM_SPEC_CACHE="${XDG_CACHE_HOME}/gem"

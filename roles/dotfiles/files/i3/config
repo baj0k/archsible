@@ -28,6 +28,10 @@ bindcode 172 exec --no-startup-id mpc toggle && pkill -RTMIN+11 i3blocks
 bindcode 173 exec --no-startup-id mpc prev && pkill -RTMIN+11 i3blocks
 bindcode 174 exec --no-startup-id mpc stop && pkill -RTMIN+11 i3blocks
 
+# yt-dlp integration
+bindsym $mod+y exec --no-startup-id yt
+
+
 # Floating windows for specific applications
 for_window [class="mpv"] floating enable
 for_window [class="Blueman-manager"] floating enable
@@ -162,7 +166,7 @@ bindsym $mod+r mode "resize"
 
 #Start i3bar to display a workspace bar
 bar {
-    output primary
+    #output primary
     status_command i3blocks -c $XDG_CONFIG_HOME/i3/i3blocks/config
     tray_output primary
     mode dock
