@@ -6,7 +6,7 @@
     hardening: false
 
     # Configure blackarch repository
-    blackarch: true
+    blackarch: false
 
     # Configure audio & bluetooth
     audio: true
@@ -17,7 +17,6 @@
     city: Warsaw
 
     # Self explanatory
-    aur_helper: yay
     hostname: TEST
     user_username: test
     user_password: test

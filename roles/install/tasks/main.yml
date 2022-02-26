@@ -138,7 +138,8 @@
         replace: Server
 
 - name: Install essential packages
-  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub openssh python sudo "{{ proc }}-ucode" "{{ wireless_utility if wireless else 'base' }}"
+  #command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub openssh python sudo "{{ proc }}-ucode" "{{ wireless_utility if wireless else 'base' }}"
+  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub openssh python sudo "{{ proc }}-ucode"
 
 - name: Generate fstab
   block:
@@ -248,6 +249,9 @@
 
     - name: Configure wireless adapter
       block:
+        - name: Install wireless utility package
+          command: arch-chroot /mnt pacman -S "{{ wireless_utility }}"
+
         - name: Configure wireless adapter
           blockinfile: 
             path: /mnt/etc/systemd/network/25-wireless.network

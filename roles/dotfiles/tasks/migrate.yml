@@ -1,6 +1,6 @@
 # TODO: consider moving wallpapers to a repository
 - name: Copy wallpapers
   copy:
-    src: ~/pictures/wallpaper
-    dest: ~/pictures/
+    src: {{ ansible_env.HOME }}/pictures/wallpaper
+    dest: {{ ansible_env.HOME }}/pictures/
   when: migrate

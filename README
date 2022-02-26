@@ -21,7 +21,6 @@ $ ansible-playbook install.yml -i hosts --ask-pass
 Important information:
 - The LUKS1 format is used because grub doesn't yet support LUKS2 format. This should be changed if the situation changes.
 - Any installation tasks that are done in chroot are using a command ansible module. This is due to the current lack of possibility to execute ansible playbooks in the remote chroot.
-- Ansible currently doesn't allow undefined variables. The install.yml playbook implements a workaround in pacstrap command at should be chenged as soon as ansible provides a clear way of unsetting variables
 
 # Full disk encryption
 This setup utilizes the LVM on LUKS scenario using a single physical disk with two partitions.

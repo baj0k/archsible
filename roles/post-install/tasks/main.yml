@@ -1,11 +1,13 @@
 ---
 - name: Localization settings
   block:
-    # TODO: check timedatectl status after installtion and fix
+    - name: Enable NTP service
+      command: timedatectl set-ntp true
+
     - name: Set timezone
       timezone:
         name: "{{ region }}/{{ city }}"
-        hwclock: local
+        hwclock: UTC
 
     - name: Remove unnecessary lines from locale.gen file
       lineinfile:
@@ -91,7 +93,7 @@
         regexp: "{{ item.regex }}"
         line: "{{ item.line }}"
       loop:
-        - {regex: "^#*\\s*--country", line: "{{ '--country ' + country|lower }}" }
+        - {regex: "^#*\\s*--country", line: "{{ '--country ' + country|lower + ',' }}" }
         - {regex: "^#*\\s*--protocol", line: "--protocol https" }
         - {regex: "^#*\\s*--sort", line: "--sort rate" }
 
@@ -112,8 +114,8 @@
         - {regex: ILoveCandy, line: ILoveCandy, insertafter: Color}
         - {regex: ParallelDownloads, line: ParallelDownloads = 5, insertafter: }
         - {regex: NoExtract, line: NoExtract = mirrorlist.pacnew, insertafter: }
-        - {regex: '^#\[multilib\]$', line: [multilib], insertafter: }
-        - {regex: Include = /etc/pacman.d/mirrorlist, line: Include = /etc/pacman.d/mirrorlist, insertafter: [multilib] }
+        - {regex: '^#\[multilib\]$', line: "[multilib]", insertafter: }
+        - {regex: Include = /etc/pacman.d/mirrorlist, line: Include = /etc/pacman.d/mirrorlist, insertafter: "[multilib]" }
 
     - name: Update system
       pacman:
@@ -123,7 +125,6 @@
     - name: Install packages
       pacman:
         name:
-          - git
           - wget
           - rsync
           - man-db
@@ -136,20 +137,6 @@
       systemd:
         name: pkgfile-update
         state: started
-
-- name: Install AUR helper
-  block:
-    - name: Clone AUR helper repository
-      git:
-        repo: "https://aur.archlinux.org/{{ aur_helper }}.git"
-        dest: "/tmp/{{ aur_helper }}"
-
-    - name: Build AUR helper package
-      become: yes
-      become_user: "{{ user_username }}"
-      command:
-        cmd: makepkg -sric --noconfirm
-        chdir: "/tmp/{{ aur_helper }}"
 
 - name: Audio configuration
   block:

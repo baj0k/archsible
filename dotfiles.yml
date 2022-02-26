@@ -1,34 +1,34 @@
 # TODO: prevent data loss - ensure that here are aliases set for rm, mv and cp with the "-i" flag that requires confirmation before executing command
-# TODO: Read through Archwiki general recommendations page for additional configuration
 # TODO: checkout coreutils improvements / alternatives from archwiki - saerch for wechiwiki core utilities
 # TODO: checkout base9 from suckless and explore possibilities of using it along / instead of coreustils GNU
-# TODO: add git config and move sensitive data to another file
 ---
 - hosts: workstations
   remote_user: test
 
   vars:
-    # Path for the repository and dotfiles
-    repo_path: "{{ ansible_env.HOME }}/repos"
-    dotfiles_path: "{{ repo_path }}/archsible/roles/dotfiles/files"
-
     # Copy environment from the ansible controller
+    # TODO: add file to track all files for migration task
     migrate: false
 
+    # Self explanatory
+    aur_helper: yay
+
     # Include software tasks
-    docker: true
-    dunst: true
+    aur: false
+    docker: false
+    dunst: false
     firefox: true # TODO: add symlinks for user.js 
+    git: false
     i3: true
-    mpd: true
-    mpv: true
-    ncmpcpp: true
-    neofetch: true
-    newsboat: true
-    neovim: true
-    ranger: true
-    suckless: true
-    tmux: true
+    mpd: false
+    mpv: false
+    ncmpcpp: false
+    neofetch: false
+    newsboat: false
+    neovim: false
+    ranger: false
+    suckless: false
+    tmux: false
     zathura: true
     zsh: true
 
@@ -40,16 +40,16 @@
   roles:
     - dotfiles
   
-  post_tasks:
-     - name: Disable sshd.service
-       become: yes
-       systemd:
-         name: sshd
-         enabled: no
-
-     - name: Reboot after installation is complete
-       become: yes
-       shell: sleep 2 && reboot
-       async: 5
-       poll: 0
-     - meta: end_host
+      #  post_tasks:
+      #     - name: Disable sshd.service
+      #       become: yes
+      #       systemd:
+      #         name: sshd
+      #         enabled: no
+      #
+      #     - name: Reboot after installation is complete
+      #       become: yes
+      #       shell: sleep 2 && reboot
+      #       async: 5
+      #       poll: 0
+      #     - meta: end_host

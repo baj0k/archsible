@@ -6,79 +6,523 @@
 #          #- acpi
 #          #- dash
 ---
-- name: Workspace setup
+- name: Home directory setup
   block:
-    - name: Create workspace directories
-      file:
-        path: "{{ item }}"
-        state: directory
-      loop:
-        - "~/.cache"
-        - "~/.config"
-        - "~/.local"
-        - "~/ctf"
-        - "~/downloads"
-        - "~/fieldwork"
-        - "~/music"
-        - "~/pictures"
-        - "~/repos"
-        - "~/tmp"
-        - "~/videos"
-
-    - name: Clone archsible repository
-      git:
-        repo: https://github.com/baj0k/archsible.git
-        dest: "{{ repo_path }}/archsible"
-
-    - name: Symlink user-dirs.dirs
-      file:
-        src: "{{ dotfiles_path }}/user-dirs.dirs"
-        path: "~/.config/user-dirs.dirs"
-        state: link
-
-    - name: Symlink locale.conf
-      file:
-        src: "{{ dotfiles_path }}/locale.conf"
-        path: "~/.config/locale.conf"
-        state: link
-
-    - name: Symlink local scripts
-      file:
-        src: "{{ dotfiles_path }}/bin"
-        path: "~/.local/bin"
-        state: link
-
     - name: Install essential packages
       become: yes
       pacman:
         name: 
           - bat
+          - git
         state: present
         
-- name: Include conditional software tasks
-  include_tasks: "{{ item.tasks }}"
-  when: item.when
-  loop:
-    - { tasks: docker.yml, when: "{{ docker }}" }
-    - { tasks: dunst.yml, when: "{{ dunst }}" }
-      # TODO: add profile creation / migration and symlink chrome.css and user.js
-    - { tasks: firefox.yml, when: "{{ firefox }}" }
-    - { tasks: i3.yml, when: "{{ i3 }}" }
-    - { tasks: mpd.yml, when: "{{ mpd }}" }
-    - { tasks: mpv.yml, when: "{{ mpv }}" }
-    - { tasks: ncmpcpp.yml, when: "{{ ncmpcpp }}" }
-    - { tasks: neofetch.yml, when: "{{ neofetch }}" }
-    - { tasks: newsboat.yml, when: "{{ newsboat }}" } # TODO: cleanup urls
-    - { tasks: neovim.yml, when: "{{ neovim }}" }   # TODO: Check plugins (fix the healthcheck provider issue)
-    - { tasks: ranger.yml, when: "{{ ranger }}" }   # TODO: update configuration files, use: ranger --copy-config all
-    - { tasks: suckless.yml, when: "{{ suckless }}" }
-    - { tasks: tmux.yml, when: "{{ tmux }}" }
-    - { tasks: xorg.yml, when: "{{ i3 }}" }
-    - { tasks: zathura.yml, when: "{{ zathura }}" }
-    - { tasks: zsh.yml, when: "{{ zsh }}" }
+    - name: Create workspace directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ ansible_env.HOME }}/.cache"
+        - "{{ ansible_env.HOME }}/.config"
+        - "{{ ansible_env.HOME }}/.local"
+        - "{{ ansible_env.HOME }}/ctf"
+        - "{{ ansible_env.HOME }}/downloads"
+        - "{{ ansible_env.HOME }}/fieldwork"
+        - "{{ ansible_env.HOME }}/music"
+        - "{{ ansible_env.HOME }}/pictures"
+        - "{{ ansible_env.HOME }}/repos"
+        - "{{ ansible_env.HOME }}/tmp"
+        - "{{ ansible_env.HOME }}/videos"
+
+    - name: Clone archsible repository
+      git:
+        repo: https://github.com/baj0k/archsible.git
+        dest: "{{ ansible_env.HOME }}/repos/archsible"
+
+    - name: Symlink user-dirs.dirs
+      file:
+        src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/user-dirs.dirs"
+        path: "{{ ansible_env.HOME }}/.config/user-dirs.dirs"
+        state: link
+
+    - name: Symlink locale.conf
+      file:
+        src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/locale.conf"
+        path: "{{ ansible_env.HOME }}/.config/locale.conf"
+        state: link
+
+    - name: Symlink local scripts
+      file:
+        src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/bin"
+        path: "{{ ansible_env.HOME }}/.local/bin"
+        state: link
+
+- name: AUR helper configuration
+  block:
+    - name: AUR - clone repository
+      git:
+        repo: "https://aur.archlinux.org/{{ aur_helper }}.git"
+        dest: "/tmp/{{ aur_helper }}"
+
+    - name: AUR - build package
+      command:
+        cmd: makepkg -sric --noconfirm
+        chdir: "/tmp/{{ aur_helper }}"
+
+    - name: AUR - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/yay"
+        state: directory
+
+    - name: AUR - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/yay/config.json"
+        path: "{{ ansible_env.HOME }}/.config/yay/config.json"
+        state: link
+  when: aur
+
+- name: Docker configuration
+  block:
+    - name: Docker - Install packages
+      become: yes
+      pacman:
+        name: 
+          - docker
+          - docker-compose
+        state: present
+
+    - name: Docker - Add user to docker group
+      become: yes
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+  when: docker
+
+- name: Dunst configuration
+  block:
+    - name: Dunst - Install packages
+      become: yes
+      pacman:
+        name: 
+          - dunst
+          - libnotify
+        state: present
+
+    - name: Dunst - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/dunst"
+        state: directory
+
+    - name: Dunst - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/dunst/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/dunst/{{ item }}"
+        state: link
+      loop:
+        - dunstrc
+  when: dunst
+
+- name: Firefox configuration
+  block:
+    - name: Firefox - Install packages
+      become: yes
+      pacman:
+        name: 
+          - firefox
+        state: present
+          # TODO: add profile creation / migration and symlink chrome.css and user.js
+  when: firefox
+
+- name: Git configuration
+  block:
+    - name: Git - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/git"
+        state: directory
+
+    - name: Git - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/git/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/git/{{ item }}"
+        state: link
+      loop:
+        - config
+  when: git
+
+- name: Mpd configuration
+  block:
+    - name: Mpd - Install packages
+      become: yes
+      pacman:
+        name: 
+          - mpd
+        state: present
+
+    - name: Mpd - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/mpd"
+        state: directory
+
+    - name: Mpd - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/mpd/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/mpd/{{ item }}"
+        state: link
+      loop:
+        - mpd.conf
+  when: mpd
+
+- name: Mpv configuration
+  block:
+    - name: Mpv - Install packages
+      become: yes
+      pacman:
+        name: 
+          - mpv
+          - yt-dlp
+        state: present
+
+    - name: Mpv - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/mpv"
+        state: directory
+
+    - name: Mpv - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/mpv/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/mpv/{{ item }}"
+        state: link
+      loop:
+        - input.conf
+        - mpv.conf
+  when: mpv
+
+- name: Ncmpcpp configuration
+  block:
+    - name: Ncmpcpp - Install packages
+      become: yes
+      pacman:
+        name: 
+          - ncmpcpp
+        state: present
+
+    - name: Ncmpcpp - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/ncmpcpp"
+        state: directory
+
+    - name: Ncmpcpp - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/ncmpcpp/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/ncmpcpp/{{ item }}"
+        state: link
+      loop:
+        - bindings
+        - config
+  when: ncmpcpp
+
+- name: Neofetch configuration
+  block:
+    - name: Neofetch - Install packages
+      become: yes
+      pacman:
+        name: 
+          - neofetch
+        state: present
+
+    - name: Neofetch - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/neofetch"
+        state: directory
+
+    - name: Neofetch - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/neofetch/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/neofetch/{{ item }}"
+        state: link
+      loop:
+        - config.conf
+  when: neofetch
+
+- name: Newsboat configuration
+  block:
+    - name: Newsboat - Install packages
+      become: yes
+      pacman:
+        name: 
+          - newsboat
+        state: present
+
+    - name: Newsboat - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/newsboat"
+        state: directory
+
+    - name: Newsboat - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/newsboat/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/newsboat/{{ item }}"
+        state: link
+      loop:
+        - config
+        - tags
+        - urls
+  when: newsboat
+
+- name: Neovim configuration
+  block:
+     # TODO: Check plugins (fix the healthcheck provider issue)
+    - name: Neovim - Install packages
+      become: yes
+      pacman:
+        name: 
+          - neovim
+        state: present
+
+    - name: Neovim - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/nvim"
+        state: directory
+
+    - name: Neovim - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/nvim/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/nvim/{{ item }}"
+        state: link
+      loop:
+        - init.vim
+  when: neovim
+
+- name: Ranger configuration
+  block:
+    # TODO: update configuration files, use: ranger --copy-config all
+    - name: Ranger - Install packages
+      become: yes
+      pacman:
+        name: 
+          - ranger
+          - ueberzug
+        state: present
+
+    - name: Ranger - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/ranger"
+        state: directory
+
+    - name: Ranger - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/ranger/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/ranger/{{ item }}"
+        state: link
+      loop:
+        - commands.py
+        - commands_full.py
+        - rc.conf
+        - rifle.conf
+        - scope.sh
+  when: ranger
+
+- name: Suckless configuration
+  block:
+    - name: Suckless-builds - Clone repository
+      git:
+        repo: https://github.com/baj0k/SB.git
+        dest: "{{ ansible_env.HOME }}/repos/suckless-builds"
+
+    - name: Suckless-builds - Install dmenu
+      become: yes
+      make:
+        chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/dmenu"
+        target: install
+
+    - name: Suckless-builds - Install sent
+      become: yes
+      make:
+        chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/sent"
+        target: install
+
+    - name: Suckless-builds - Install slock
+      become: yes
+      make:
+        chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/slock"
+        target: install
+
+    - name: Suckless-builds - Install st
+      become: yes
+      make:
+        chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/st"
+        target: install
+
+    - name: Suckless-builds - Install tabbed
+      become: yes
+      make:
+        chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/tabbed"
+        target: install
+  when: suckless
+
+- name: Tmux configuration
+  block:
+    - name: Tmux - Install packages
+      become: yes
+      pacman:
+        name: 
+          - tmux
+        state: present
+
+    - name: Tmux - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/tmux"
+        state: directory
+
+    - name: Tmux - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/tmux/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/tmux/{{ item }}"
+        state: link
+      loop:
+        - tmux.conf
+  when: tmux
+
+- name: Zathura configuration
+  block:
+    - name: Zathura - Install packages
+      become: yes
+      pacman:
+        name: 
+          - zathura
+          - zathura-pdf-mupdf
+        state: present
+
+    - name: Zathura - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/zathura"
+        state: directory
+
+    - name: Zathura - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/zathura/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/zathura/{{ item }}"
+        state: link
+      loop:
+        - zathurarc
+  when: zathura
+
+- name: Zsh configuration
+  block:
+    - name: Zsh - Install packages
+      become: yes
+      pacman:
+        name:
+          - zsh
+          - zsh-completions
+          - zsh-syntax-highlighting
+        state: present
+
+    - name: Zsh - Change default shell
+      become: yes
+      user:
+        name: "{{ ansible_user_id }}"
+        shell: /bin/zsh
+
+    - name: Zsh - Workaround for XDG compliance
+      become: yes
+      lineinfile:
+        path: /etc/zsh/zshenv
+        state: present
+        create: yes
+        line: 'export ZDOTDIR="$HOME/.config/zsh"'
+
+    - name: Zsh - Create directories
+      file:
+        path: "{{ ansible_env.HOME }}/.config/zsh"
+        state: directory
+
+    - name: Zsh - Symlink configuration
+      file:
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/zsh/{{ item }}"
+        path: "{{ ansible_env.HOME }}/.config/zsh/{{ item }}"
+        state: link
+      loop:
+        - aliasrc
+        - .zkbd
+        - .zprofile
+        - .zshenv
+        - .zshrc
+  when: zsh
+
+- name: Graphical user interface configuration
+  block:
+    - name: Xorg configuration
+      block:
+        # TODO: cleanup xinitrc
+        - name: Xorg - Install packages
+          become: yes
+          pacman:
+            name: 
+              - xorg
+              - xorg-xinit
+              - xwallpaper
+              - xcompmgr
+            state: present
+              
+        # TODO: fix for amd and nvidia drivers (current setup works for intel)
+        - name: Xorg - Install GPU drivers
+          become: yes
+          pacman:
+            name: 
+              - mesa
+              - lib32-mesa
+              - xf86-video-intel
+              - vulkan-intel
+              - xf86-video-fbdev
+              - intel-media-driver
+            state: present
+
+        - name: Xorg - Create directories
+          file:
+            path: "{{ ansible_env.HOME }}/.config/xorg"
+            state: directory
+
+        - name: Xorg - Symlink configuration
+          file:
+            src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/xorg/{{ item }}"
+            path: "{{ ansible_env.HOME }}/.config/xorg/{{ item }}"
+            state: link
+          loop:
+            - Xresources
+            - xinitrc
+
+    - name: Window manager configuration
+      block:
+        - name: i3 - Install packages
+          become: yes
+          pacman:
+            name:
+              - i3-gaps
+              - i3blocks
+              - noto-fonts
+              - ttf-joypixels
+              - ttf-font-awesome
+              - ttf-dejavu
+              - ttf-inconsolata
+              - ttf-liberation
+            state: present
+
+        - name: i3 - Create directories
+          file:
+            path: "{{ ansible_env.HOME }}/.config/i3"
+            state: directory
+
+        - name: i3 - Symlink configuration
+          file:
+            src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/i3/{{ item }}"
+            path: "{{ ansible_env.HOME }}/.config/i3/{{ item }}"
+            state: link
+          loop:
+            - config
+            - i3blocks
+  when: i3
 
 - name: Include migration tasks
-  include_tasks: "{{ item }}"
+  include_tasks: migrate.yml
   when: migrate
-  loop:
-    - migrate.yml
