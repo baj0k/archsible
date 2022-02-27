@@ -6,7 +6,7 @@
     hardening: false
 
     # Configure blackarch repository
-    blackarch: false
+    blackarch: true
 
     # Configure audio & bluetooth
     audio: true

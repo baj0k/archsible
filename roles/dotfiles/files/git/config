@@ -31,8 +31,8 @@
 [url "https://github.com/"]
 	insteadOf = gh:
 
-[url "ssh://git@github.com/"]
-	insteadOf = https://github.com/
+#[url "ssh://git@github.com/"]
+#	insteadOf = https://github.com/
 
 [alias]
     # Put 'TODO: <text>' in any of the tracked files and this command will display it along its filename and line number
