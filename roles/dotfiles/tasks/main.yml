@@ -1,9 +1,6 @@
 # TODO: Manual tasks: (maybe uninstall conflicting packages? must be a way to ignore dependency)       install libxft-bgra (no option to automatically resolve pacman conflict )
-# TODO: consider linking all files inside directory in a loop instead of linking directory
-# TODO: compare files in repo with currently used on desktop and update if necessary
-# TODO: is acpi needed on desktop or laptop only?
-#          #- acpi
-#          #- dash
+# TODO: add acpi if needed and check if acpi is needed on desktop or laptop only?
+# TODO: add symlinks for user.js chrome.css in firefox tasks
 ---
 - name: Home directory setup
   block:
@@ -131,7 +128,6 @@
         name: 
           - firefox
         state: present
-          # TODO: add profile creation / migration and symlink chrome.css and user.js
   when: firefox
 
 - name: Git configuration
@@ -466,9 +462,9 @@
         - .zshrc
   when: zsh
 
-- name: Graphical user interface configuration
+- name: GUI setup
   block:
-    - name: Xorg configuration
+    - name: Display server configuration
       block:
         # TODO: cleanup xinitrc
         - name: Xorg - Install packages
@@ -539,6 +535,20 @@
             - i3blocks
   when: i3
 
-- name: Include migration tasks
-  include_tasks: migrate.yml
+- name: Migrate data from ansible controller
+  copy:
+    src: "{{ item }}"
+    dest: "{{ item }}"
+  loop:
+      # $HOME
+    - ~/ctf/
+    - ~/downloads/
+    - ~/fieldwork/
+    - ~/music/
+    - ~/pictures/
+    - ~/repos/
+    - ~/tmp/
+    - ~/videos/
+      # $HOME/.config
+    - ~/.config/git/identity
   when: migrate

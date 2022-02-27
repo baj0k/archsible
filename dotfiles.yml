@@ -1,5 +1,3 @@
-# TODO: add file to track all files for migration task
-# TODO: add symlinks for user.js chrome.css in firefox tasks
 ---
 - hosts: workstations
   remote_user: test
@@ -23,7 +21,7 @@
     ncmpcpp: false
     neofetch: false
     newsboat: false
-    neovim: false
+    neovim: true
     ranger: false
     suckless: false
     tmux: false
