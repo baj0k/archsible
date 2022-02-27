@@ -1,0 +1,45 @@
+[include]
+    path = identity
+
+[core]
+    editor = $EDITOR
+
+[pull]
+	rebase = true
+[init]
+	defaultBranch = main
+
+[color]
+	ui = true
+
+[color "branch"]
+	current = yellow reverse
+	local = yellow
+	remote = green
+
+[color "diff"]
+	meta = yellow bold
+	frag = magenta bold
+	old = red bold
+	new = green bold
+
+[color "status"]
+	added = yellow
+	changed = green
+	untracked = red
+
+[url "https://github.com/"]
+	insteadOf = gh:
+
+[url "ssh://git@github.com/"]
+	insteadOf = https://github.com/
+
+[alias]
+    # Put 'TODO: <text>' in any of the tracked files and this command will display it along its filename and line number
+    todo = !grep -Hno "TODO:.*" $(git ls-files) | sed 's/TODO:\\s*//' | column -t -s: -N FILE,LINE,TODO -l 3
+
+    # Search all tracked files for keyword
+    search = "!f() { grep -Hno \"\\S*$1\\S*\" $(git ls-files) | column -t -s: -N FILE,LINE,KEYWORD -l 3; }; f"
+
+    # Converts github markdown files to plaintext
+    md2txt = !pandoc -f gfm -t plain

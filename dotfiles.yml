@@ -15,8 +15,8 @@
     aur: false
     docker: false
     dunst: false
-    firefox: true
-    git: false
+    firefox: false
+    git: true
     i3: false
     mpd: false
     mpv: false
@@ -25,7 +25,7 @@
     newsboat: false
     neovim: false
     ranger: false
-    suckless: true
+    suckless: false
     tmux: false
     zathura: false
     zsh: false
