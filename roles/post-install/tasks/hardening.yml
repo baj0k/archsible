@@ -1,6 +1,7 @@
 # TODO: use UEFI secure boot to sign the bootloader with user's own keys (Evil Maid prevention)
 ---
 - name: Install additional packages
+  become: yes
   pacman:
     update_cache: yes
     name:
@@ -14,6 +15,7 @@
       register: guid
 
     - name: Create a GUID for key owner identification - Save output to file
+      become: yes
       copy:
         content: '{{ guid.stdout }}'
         dest: /root/GUID.txt

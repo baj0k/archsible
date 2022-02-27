@@ -1,5 +1,4 @@
 # TODO: Manual tasks: (maybe uninstall conflicting packages? must be a way to ignore dependency)       install libxft-bgra (no option to automatically resolve pacman conflict )
-# TODO: fix sb makefiles to cleanup after installation
 # TODO: consider linking all files inside directory in a loop instead of linking directory
 # TODO: compare files in repo with currently used on desktop and update if necessary
 # TODO: is acpi needed on desktop or laptop only?
@@ -8,12 +7,14 @@
 ---
 - name: Home directory setup
   block:
-    - name: Install essential packages
+    - name: Install useful packages
       become: yes
       pacman:
         name: 
           - bat
+          - checkbashisms
           - git
+          - pdfgrep
         state: present
         
     - name: Create workspace directories
@@ -333,31 +334,46 @@
       become: yes
       make:
         chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/dmenu"
-        target: install
+        target: "{{ item }}"
+      loop:
+        - install
+        - clean
 
     - name: Suckless-builds - Install sent
       become: yes
       make:
         chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/sent"
-        target: install
+        target: "{{ item }}"
+      loop:
+        - install
+        - clean
 
     - name: Suckless-builds - Install slock
       become: yes
       make:
         chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/slock"
-        target: install
+        target: "{{ item }}"
+      loop:
+        - install
+        - clean
 
     - name: Suckless-builds - Install st
       become: yes
       make:
         chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/st"
-        target: install
+        target: "{{ item }}"
+      loop:
+        - install
+        - clean
 
     - name: Suckless-builds - Install tabbed
       become: yes
       make:
         chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/tabbed"
-        target: install
+        target: "{{ item }}"
+      loop:
+        - install
+        - clean
   when: suckless
 
 - name: Tmux configuration

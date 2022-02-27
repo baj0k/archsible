@@ -1,24 +1,23 @@
-# TODO: checkout coreutils improvements / alternatives from archwiki - saerch for wechiwiki core utilities
-# TODO: checkout base9 from suckless and explore possibilities of using it along / instead of coreustils GNU
+# TODO: add file to track all files for migration task
+# TODO: add symlinks for user.js chrome.css in firefox tasks
 ---
 - hosts: workstations
   remote_user: test
 
   vars:
-    # Copy environment from the ansible controller
-    # TODO: add file to track all files for migration task
+    # Copy user data from the ansible controller
     migrate: false
 
     # Self explanatory
     aur_helper: yay
 
-    # Include software tasks
+    # Include software specific tasks
     aur: false
     docker: false
     dunst: false
-    firefox: true # TODO: add symlinks for user.js 
+    firefox: true
     git: false
-    i3: true
+    i3: false
     mpd: false
     mpv: false
     ncmpcpp: false
@@ -26,10 +25,10 @@
     newsboat: false
     neovim: false
     ranger: false
-    suckless: false
+    suckless: true
     tmux: false
-    zathura: true
-    zsh: true
+    zathura: false
+    zsh: false
 
   pre_tasks:
     - name: Check internet connection

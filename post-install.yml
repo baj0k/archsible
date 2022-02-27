@@ -1,6 +1,6 @@
 ---
 - hosts: workstations
-  remote_user: root
+  remote_user: test
   vars:
     # Include hardening tasks
     hardening: true
@@ -11,15 +11,11 @@
     # Configure audio & bluetooth
     audio: true
 
-    # Localization Settings
+    # Localization settings
     region: Europe
     country: PL
     city: Warsaw
-
-    # Self explanatory
     hostname: TEST
-    user_username: test
-    user_password: test
 
   pre_tasks:
     - name: Check internet connection

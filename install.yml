@@ -12,12 +12,15 @@
     shred: false
 
     # Configure wireless adapter
-    wireless: false
+    wireless: true
     wireless_utility: iwd
 
-    # Password configuration
+    # Passwords & user configuration
     luks_password: test
     root_password: test
+
+    user_username: test
+    user_password: test
 
   pre_tasks:
     - name: Verify the UEFI boot mode

@@ -1,5 +1,6 @@
 ---
 - name: Localization settings
+  become: yes
   block:
     - name: Enable NTP service
       command: timedatectl set-ntp true
@@ -42,32 +43,6 @@
       hostname:
         name: "{{ hostname }}"
 
-- name: User configuration
-  block:
-    - name: Create user
-      user:
-        name: "{{ user_username }}"
-        groups:
-          - adm
-          - games
-          - sys
-          - wheel
-          - lp
-          - audio
-          - kvm
-          - video
-        append: yes
-        password: "{{ user_password | password_hash('sha512') }}"
-        update_password: on_create
-
-    - name: Give passwordless sudo access to the wheel group
-      lineinfile:
-        path: /etc/sudoers
-        state: present
-        regexp: "%wheel ALL="
-        line: "%wheel ALL=(ALL) NOPASSWD: ALL"
-        validate: "/usr/sbin/visudo --check --file=%s"
-
 - name: Blackarch configuration
   block:
     - name: Download blackarch setup script
@@ -76,11 +51,12 @@
         dest: /tmp/strap.sh
         
     - name: Setup blackarch repository
+      become: yes
       command: "sh /tmp/strap.sh"
-
   when: blackarch
 
 - name: Package management
+  become: yes
   block:
     - name: Install reflector
       pacman:
@@ -125,6 +101,7 @@
     - name: Install packages
       pacman:
         name:
+          - dash
           - wget
           - rsync
           - man-db
@@ -138,7 +115,35 @@
         name: pkgfile-update
         state: started
 
+- name: Configure Dash
+  become: yes
+  block:
+    - name: Relink /bin/sh to dash
+      file:
+        src: "dash"
+        path: "/usr/bin/sh"
+        state: link
+        force: yes
+
+    - name: Create pacman hook for persistant relinking of /bin/sh to dash
+      blockinfile: 
+        path: /etc/pacman.d/hooks/dash.hook
+        create: true
+        block: |
+          [Trigger]
+          Type = Package
+          Operation = Install
+          Operation = Upgrade
+          Target = bash
+
+          [Action]
+          Description = Re-pointing /bin/sh symlink to dash...
+          When = PostTransaction
+          Exec = /usr/bin/ln -sfT dash /usr/bin/sh
+          Depends = dash
+
 - name: Audio configuration
+  become: yes
   block:
     - name: Install audio related packages
       pacman:
@@ -180,6 +185,7 @@
   when: audio
 
 - name: Systemd configuration
+  become: yes
   block:
     - name: Enable service timer units
       systemd:

@@ -138,8 +138,7 @@
         replace: Server
 
 - name: Install essential packages
-  #command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub openssh python sudo "{{ proc }}-ucode" "{{ wireless_utility if wireless else 'base' }}"
-  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub openssh python sudo "{{ proc }}-ucode"
+  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub openssh python sudo dash "{{ proc }}-ucode"
 
 - name: Generate fstab
   block:
@@ -190,7 +189,7 @@
     - name: Create new initramfs
       command: arch-chroot /mnt mkinitcpio -p linux
 
-- name: Configure and install bootloader
+- name: Bootloader configuration
   block:
     - name: Set kernel parameters and configure grub
       lineinfile:
@@ -250,7 +249,7 @@
     - name: Configure wireless adapter
       block:
         - name: Install wireless utility package
-          command: arch-chroot /mnt pacman -S "{{ wireless_utility }}"
+          command: arch-chroot /mnt pacman -S "{{ wireless_utility }}" --noconfirm
 
         - name: Configure wireless adapter
           blockinfile: 
@@ -267,11 +266,18 @@
               RouteMetric=20
       when: wireless
 
+- name: Create system user and setup root password
+  block:
     - name: Set root password
       command: arch-chroot /mnt usermod -p "{{ root_password | password_hash('sha512') }}" root
 
-    - name: Allow root login via ssh
+    - name: Create system user
+      command: arch-chroot /mnt useradd -m -G adm,games,sys,wheel,lp,audio,kvm,video "{{ user_username }}" -p "{{ user_password | password_hash('sha512') }}"
+    
+    - name: Give passwordless sudo access to the wheel group
       lineinfile:
-        dest: /mnt/etc/ssh/sshd_config
-        regexp: "^#PermitRootLogin"
-        line: "PermitRootLogin yes"
+        path: /mnt/etc/sudoers
+        state: present
+        regexp: "%wheel ALL="
+        line: "%wheel ALL=(ALL) NOPASSWD: ALL"
+        validate: "/usr/sbin/visudo --check --file=%s"
