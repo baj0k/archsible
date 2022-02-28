@@ -31,9 +31,6 @@
 [url "https://github.com/"]
 	insteadOf = gh:
 
-[url "ssh://git@github.com/"]
-	insteadOf = https://github.com/
-
 [alias]
     # Put 'todo: <text>' (todo must be in capital letters) in any of the tracked files and this will display it along its filename and line number
     todo = !grep --color=always -PHno '(?<=\\x54ODO:).*' $(git ls-files) | sed -r 's/\\x1B\\[K//g' | column -t -N File,Line,Todo -l 3 -s:
