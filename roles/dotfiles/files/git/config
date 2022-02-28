@@ -36,27 +36,10 @@
 
 [alias]
     # Put 'todo: <text>' (todo must be in capital letters) in any of the tracked files and this will display it along its filename and line number
-    todo = !grep --color=always -Hno $'\\x54\\x4F\\x44\\x4F\\s*:.*' $(git ls-files) | sed 's/\\x54\\x4F\\x44\\x4F:\\s*//' | sed 's/:/\\ /2' | sed -r 's/\\x1B\\[([0-9]{1,2}(\\x3b[0-9]{1,2})?)?[K]//g' | column -t -l 2 -N File,Todo
+    todo = !grep --color=always -PHno '(?<=\\x54ODO:).*' $(git ls-files) | sed -r 's/\\x1B\\[K//g' | column -t -N File,Line,Todo -l 3 -s:
 
     # Search all tracked files for keyword
-    search = "!f() { grep --color=always -Hno \"\\S*$1\\S*\" $(git ls-files) | column -t -s: -l 2; }; f"
+    search = "!f() { grep --color=always -Hno \"\\S*$1\\S*\" $(git ls-files) | sed -r 's/\\x1B\\[K//g' | column -t -s: -l 3; }; f"
 
     # Converts github markdown files to plaintext
     md2txt = !pandoc -f gfm -t plain
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
