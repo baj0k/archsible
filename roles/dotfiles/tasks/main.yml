@@ -1,19 +1,9 @@
-# TODO: Manual tasks: (maybe uninstall conflicting packages? must be a way to ignore dependency)       install libxft-bgra (no option to automatically resolve pacman conflict )
 # TODO: add acpi if needed and check if acpi is needed on desktop or laptop only?
 # TODO: add symlinks for user.js chrome.css in firefox tasks
+# TODO: add systemd timer for newsboat synchronisation (previously was done with /usr/bin/newsboat -x reload every 30 minutes)
 ---
 - name: Home directory setup
   block:
-    - name: Install useful packages
-      become: yes
-      pacman:
-        name: 
-          - bat
-          - checkbashisms
-          - git
-          - pdfgrep
-        state: present
-        
     - name: Create workspace directories
       file:
         path: "{{ item }}"
@@ -48,7 +38,7 @@
         path: "{{ ansible_env.HOME }}/.config/locale.conf"
         state: link
 
-    - name: Symlink local scripts
+    - name: Symlink user scripts
       file:
         src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/bin"
         path: "{{ ansible_env.HOME }}/.local/bin"
@@ -56,25 +46,25 @@
 
 - name: AUR helper configuration
   block:
-    - name: AUR - clone repository
+    - name: AUR - Clone AUR helper PKGBUILD
       git:
         repo: "https://aur.archlinux.org/{{ aur_helper }}.git"
         dest: "/tmp/{{ aur_helper }}"
 
-    - name: AUR - build package
+    - name: AUR - Build package
       command:
         cmd: makepkg -sric --noconfirm
         chdir: "/tmp/{{ aur_helper }}"
 
     - name: AUR - Create directories
       file:
-        path: "{{ ansible_env.HOME }}/.config/yay"
+        path: "{{ ansible_env.HOME }}/.config/{{ aur_helper }}"
         state: directory
 
     - name: AUR - Symlink configuration
       file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/yay/config.json"
-        path: "{{ ansible_env.HOME }}/.config/yay/config.json"
+        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/{{ aur_helper }}/config.json"
+        path: "{{ ansible_env.HOME }}/.config/{{ aur_helper }}/config.json"
         state: link
   when: aur
 
@@ -268,7 +258,6 @@
 
 - name: Neovim configuration
   block:
-     # TODO: Check plugins (fix the healthcheck provider issue)
     - name: Neovim - Install packages
       become: yes
       pacman:
@@ -370,6 +359,19 @@
       loop:
         - install
         - clean
+
+    - name: Suckless-builds - Remove libxft
+      tags: test
+      become: yes
+      pacman:
+        name: libxft
+        state: absent
+        extra_args: -dd
+
+    - name: Suckless-builds - Install libxft-bgra
+      tags: test
+      command:
+        cmd: "{{ aur_helper }} -S libxft-bgra"
   when: suckless
 
 - name: Tmux configuration
@@ -401,6 +403,7 @@
       become: yes
       pacman:
         name: 
+          - pdfgrep
           - zathura
           - zathura-pdf-mupdf
         state: present
@@ -425,6 +428,8 @@
       become: yes
       pacman:
         name:
+          - bat
+          - checkbashisms
           - zsh
           - zsh-completions
           - zsh-syntax-highlighting
@@ -466,7 +471,6 @@
   block:
     - name: Display server configuration
       block:
-        # TODO: cleanup xinitrc
         - name: Xorg - Install packages
           become: yes
           pacman:
@@ -488,6 +492,18 @@
               - vulkan-intel
               - xf86-video-fbdev
               - intel-media-driver
+            state: present
+
+        - name: Xorg - Install fonts
+          become: yes
+          pacman:
+            name: 
+              - noto-fonts
+              - ttf-joypixels
+              - ttf-font-awesome
+              - ttf-dejavu
+              - ttf-inconsolata
+              - ttf-liberation
             state: present
 
         - name: Xorg - Create directories
@@ -512,12 +528,7 @@
             name:
               - i3-gaps
               - i3blocks
-              - noto-fonts
-              - ttf-joypixels
-              - ttf-font-awesome
-              - ttf-dejavu
-              - ttf-inconsolata
-              - ttf-liberation
+              - sxiv
             state: present
 
         - name: i3 - Create directories

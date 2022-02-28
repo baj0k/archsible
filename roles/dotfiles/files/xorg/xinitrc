@@ -3,22 +3,21 @@
 # Source Xresources
 xrdb -merge $XDG_CONFIG_HOME/xorg/Xresources &
 
-#Autostart 
+# Autostart 
+autorandr --change &
+redshift -P -O 4200 &
 remap &
 xset s off -dpms &
-dunst &
 xcompmgr &
-autorandr --change &
-firefox &
-blueman-applet &
-ssh proxy -N &
-signal-desktop --start-in-tray &
+
 birdtray &
-caprine --minimize &
-spotifyd --config-path .config/spotifyd/spotifyd.conf &
-discord --start-minimized &
-crond -f "$XDG_CONFIG_HOME/crontab" &
+blueman-applet &
+dunst &
+firefox &
 mpd &
-redshift -P -O 4200 &
+
+caprine --minimize &
+discord --start-minimized &
+signal-desktop --start-in-tray &
 
 exec i3 

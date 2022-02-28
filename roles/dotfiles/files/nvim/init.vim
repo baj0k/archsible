@@ -16,8 +16,8 @@ autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
 " Plugins
     call plug#begin()
     Plug 'ncm2/ncm2'
-    Plug 'SirVer/ultisnips'
-    Plug 'honza/vim-snippets'
+    "Plug 'SirVer/ultisnips'
+    "Plug 'honza/vim-snippets'
     Plug 'jiangmiao/auto-pairs'
     Plug 'alec-gibson/nvim-tetris'
     Plug 'ThePrimeagen/vim-be-good'

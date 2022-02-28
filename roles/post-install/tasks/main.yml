@@ -101,13 +101,14 @@
     - name: Install packages
       pacman:
         name:
+          - base-devel
           - dash
-          - wget
-          - rsync
+          - git
           - man-db
           - man-pages
-          - base-devel
           - pkgfile
+          - rsync
+          - wget
         state: present
 
     - name: Synchronize pkgfile database

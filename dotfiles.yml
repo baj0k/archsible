@@ -10,23 +10,23 @@
     aur_helper: yay
 
     # Include software specific tasks
-    aur: true
-    docker: true
-    dunst: true
-    firefox: true
-    git: true
-    i3: true
-    mpd: true
-    mpv: true
-    ncmpcpp: true
-    neofetch: true
-    newsboat: true
-    neovim: true
-    ranger: true
+    aur: false
+    docker: false
+    dunst: false
+    firefox: false
+    git: false
+    i3: false
+    mpd: false
+    mpv: false
+    ncmpcpp: false
+    neofetch: false
+    newsboat: false
+    neovim: false
+    ranger: false
     suckless: true
-    tmux: true
-    zathura: true
-    zsh: true
+    tmux: false
+    zathura: false
+    zsh: false
 
   pre_tasks:
     - name: Check internet connection

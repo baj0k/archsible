@@ -31,15 +31,32 @@
 [url "https://github.com/"]
 	insteadOf = gh:
 
-#[url "ssh://git@github.com/"]
-#	insteadOf = https://github.com/
+[url "ssh://git@github.com/"]
+	insteadOf = https://github.com/
 
 [alias]
-    # Put 'TODO: <text>' in any of the tracked files and this command will display it along its filename and line number
-    todo = !grep -Hno "TODO:.*" $(git ls-files) | sed 's/TODO:\\s*//' | column -t -s: -N FILE,LINE,TODO -l 3
+    # Put 'todo: <text>' (todo must be in capital letters) in any of the tracked files and this will display it along its filename and line number
+    todo = !grep --color=always -Hno $'\\x54\\x4F\\x44\\x4F\\s*:.*' $(git ls-files) | sed 's/\\x54\\x4F\\x44\\x4F:\\s*//' | sed 's/:/\\ /2' | sed -r 's/\\x1B\\[([0-9]{1,2}(\\x3b[0-9]{1,2})?)?[K]//g' | column -t -l 2 -N File,Todo
 
     # Search all tracked files for keyword
-    search = "!f() { grep -Hno \"\\S*$1\\S*\" $(git ls-files) | column -t -s: -N FILE,LINE,KEYWORD -l 3; }; f"
+    search = "!f() { grep --color=always -Hno \"\\S*$1\\S*\" $(git ls-files) | column -t -s: -l 2; }; f"
 
     # Converts github markdown files to plaintext
     md2txt = !pandoc -f gfm -t plain
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
