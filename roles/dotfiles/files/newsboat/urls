@@ -22,6 +22,7 @@ https://opensource.com/feed "feed" "~feed: Opensource.com" # check
 https://blog.rogs.me/index.xml "feed" "~feed: rogs"
 https://www.sandflysecurity.com/feed/ "feed" "~feed: sandflysecurity"
 https://www.secjuice.com/rss/ "feed" "~feed: Secjuice"
+https://markhuge.com/index.xml "feed" "~feed: Markhuge"
 https://feeds.feedburner.com/sekurak "feed" "~feed: Sekurak"
 https://suckless.org/atom.xml "feed" "~feed: Suckless.org news"
 https://t3chnocat.com/rss/ "feed" "~feed: t3chnocat.com"

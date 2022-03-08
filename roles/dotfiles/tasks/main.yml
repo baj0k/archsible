@@ -1,6 +1,5 @@
 # TODO: add acpi if needed and check if acpi is needed on desktop or laptop only?
 # TODO: add symlinks for user.js chrome.css in firefox tasks
-# TODO: add systemd timer for newsboat synchronisation (previously was done with /usr/bin/newsboat -x reload every 30 minutes)
 ---
 - name: Home directory setup
   block:
@@ -136,6 +135,55 @@
         - config
   when: git
 
+- name: Virtualisation configuration
+  block:
+    - name: Libvirt - Remove iptables
+      become: yes
+      pacman:
+        name: iptables
+        state: absent
+        extra_args: -dd
+
+    - name: Libvirt - Install packages
+      become: yes
+      pacman:
+        name: 
+          - qemu
+          - libvirt
+          - iptables-nft
+          - dnsmasq
+          - dmidecode
+          - virt-manager
+        state: present
+
+    - name: Libvirt - Add user to libvirt group
+      become: yes
+      user:
+        name: "{{ ansible_user }}"
+        groups: libvirt
+        append: yes
+
+    - name: Libvirt - Change default virsh connection
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.config/libvirt/libvirt.conf"
+        state: present
+        create: yes
+        line: 'uri_default = "qemu:///system"'
+
+          # - name: Libvirt - Create directories
+          #   file:
+          #     path: "{{ ansible_env.HOME }}/.config/git"
+          #     state: directory
+
+          # - name: Libvirt - Symlink configuration
+          #   file:
+          #     src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/git/{{ item }}"
+          #     path: "{{ ansible_env.HOME }}/.config/git/{{ item }}"
+          #     state: link
+          #   loop:
+          #     - config
+  when: libvirt
+
 - name: Mpd configuration
   block:
     - name: Mpd - Install packages
@@ -254,6 +302,16 @@
         - config
         - tags
         - urls
+
+          # TODO: test crontab
+    - name: Newsboat - Add crontab tasks
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.config/crontab" 
+        line: "{{ item }}"
+        create: true
+      loop:
+        - "@reboot /usr/bin/newsboat -x reload"
+        - "0/10 * * * * /usr/bin/newsboat -x reload"
   when: newsboat
 
 - name: Neovim configuration
@@ -263,6 +321,7 @@
       pacman:
         name: 
           - neovim
+          - shellcheck
         state: present
 
     - name: Neovim - Create directories
@@ -308,7 +367,7 @@
         - scope.sh
   when: ranger
 
-- name: Suckless configuration
+- name: Suckless tools configuration
   block:
     - name: Suckless-builds - Clone repository
       git:
@@ -361,17 +420,31 @@
         - clean
 
     - name: Suckless-builds - Remove libxft
-      tags: test
       become: yes
       pacman:
         name: libxft
         state: absent
         extra_args: -dd
 
+    - name: Suckless-builds - Download libxft-bgra
+      git:
+        repo: "https://aur.archlinux.org/libxft-bgra.git"
+        dest: "/tmp/libxft-bgra"
+
     - name: Suckless-builds - Install libxft-bgra
-      tags: test
       command:
-        cmd: "{{ aur_helper }} -S libxft-bgra"
+        cmd: makepkg -sric --noconfirm
+        chdir: "/tmp/libxft-bgra"
+      
+    - name: Scron - Clone repository
+      git:
+        repo: https://aur.archlinux.org/scron-git.git
+        dest: /tmp/scron
+
+    - name: Scron - Build package
+      command:
+        cmd: makepkg -sric --noconfirm
+        chdir: /tmp/scron
   when: suckless
 
 - name: Tmux configuration
@@ -478,6 +551,7 @@
               - xorg
               - xorg-xinit
               - xwallpaper
+              - xclip
               - xcompmgr
             state: present
               
@@ -519,6 +593,18 @@
           loop:
             - Xresources
             - xinitrc
+
+        - name: Allow language specific characters in terminal
+          become:
+          blockinfile:
+            create: yes
+            path: /etc/X11/xorg.conf.d/00-keyboard.conf
+            block: |
+              Section "InputClass"
+                      Identifier "system-keyboard"
+                      MatchIsKeyboard "on"
+                      Option "XkbLayout" "{{ country | lower }}"
+              EndSection
 
     - name: Window manager configuration
       block:

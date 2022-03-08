@@ -1,20 +1,20 @@
 #!/bin/sh
 
-task=$(printf "stream\ndownload" | dmenu -i -p "Youtube:")
+task=$(printf "stream video\nstream audio\ndownload video\ndownload audio" | dmenu -i -p "Youtube:")
+[ -n "${task}" ] && src=$(dmenu -i -p "${task}" <&-)
 
-case "${task}" in
-    stream) 
-        src=$(dmenu -i -p "Stream:" <&-)
-        [ -n "${src}" ] && mpv --ytdl-format='bestvideo[height<=?1080][vcodec!=vp9]+bestaudio/best' ytdl://ytsearch:"${src}" ;;
+[ -n "${src}" ] && case "${task}" in
+    stream\ video)
+        mpv --ytdl-format='bestvideo[height<=?1080][vcodec!=vp9]+bestaudio/best' ytdl://ytsearch:"${src}" ;;
 
-    download)
-        mode=$(printf "audio\nvideo" | dmenu -i -p "Download:")
-        src=$(dmenu -i -p "Download:" <&-) ;;
-    *) exit 0 ;;
-esac
+    stream\ audio)
+        mpv --ytdl-format='bestaudio/best' --no-video ytdl://ytsearch:"${src}" ;;
 
-[ -n "${mode}" ] && case "${mode}" in
-    audio) yt-dlp -o "${HOME}/music/%(artist)s-%(title)s.%(ext)s" --restrict-filenames -xic -f bestaudio/best --hls-prefer-ffmpeg ;;
-    video) yt-dlp -o "${HOME}/video/%(title)s.%(ext)s" --restrict-filenames -ic -f best --hls-prefer-ffmpeg ;;
+        # TODO: test download video case
+    download\ video)
+        yt-dlp -o "${HOME}/videos/%(title)s.%(ext)s" --restrict-filenames -ic -f 'bestvideo[height<=?1080][vcodec!=vp9]+bestaudio/best' --hls-prefer-ffmpeg ytsearch:"${src}" ;;
+
+    download\ audio)
+        yt-dlp -o "${HOME}/music/%(artist)s-%(title)s.%(ext)s" --restrict-filenames -xic -f bestaudio/best --hls-prefer-ffmpeg ytsearch:"${src}" ;;
     *) exit 0 ;;
 esac

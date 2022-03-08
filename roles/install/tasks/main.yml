@@ -1,16 +1,17 @@
 ---
 - name: Cleanup the disk and set variables
+  tags: test
   block:
     - name: Overwrite disk with random data
-      command: shred -v --random-source=/dev/urandom -n1 /dev/{{ drive }}
+      command: shred -v --random-source=/dev/urandom -n1 /dev/{{ install_drive }}
       when: shred
 
     - name: Erase data structures from the partitions
       command: wipefs -a "/dev/{{ item }}"
-      loop: "{{ ansible_devices[drive].partitions.keys() }}"
+      loop: "{{ ansible_devices[install_drive].partitions.keys() }}"
 
     - name: Erase data structures from the disk
-      command: wipefs -a "/dev/{{ drive }}"
+      command: wipefs -a "/dev/{{ install_drive }}"
 
     - name: Initialize empty list
       set_fact:
@@ -25,13 +26,20 @@
       when: "item.endswith('Intel') or
              item.endswith('AMD')"
 
+- name: Get processor architecture
+  set_fact:
+    proc: "{{ item|regex_replace( '^.*(Intel|AMD)', '\\1' ) | lower }}"
+  with_items: "{{ ansible_processor }}"
+  when: "item.endswith('Intel') or
+         item.endswith('AMD')"
+
 - name: Partition the disk
   block:
     - name: Create EFI partition
-      command: sgdisk -n 1:0:551M -c 1:BOOT -t 1:ef00 "/dev/{{ drive }}"
+      command: sgdisk -n 1:0:551M -c 1:BOOT -t 1:ef00 "/dev/{{ install_drive }}"
 
     - name: Create LUKS partition
-      command: sgdisk -n 0:0:0 -c 0:LUKS -t 0:8309 "/dev/{{ drive }}"
+      command: sgdisk -n 0:0:0 -c 0:LUKS -t 0:8309 "/dev/{{ install_drive }}"
 
     - name: Update gathered facts
       setup:
@@ -39,7 +47,7 @@
     - name: Get selected drive partitions
       set_fact:
         partitions: "{{ partitions + [item.key] }}"
-      with_dict: "{{ ansible_devices[drive].partitions }}"
+      with_dict: "{{ ansible_devices[install_drive].partitions }}"
 
 - name: Setup LVM on LUKS
   block:
@@ -66,12 +74,18 @@
         size: "{{ item.size }}"
         force: yes
       loop:
-        - {vg: vg, lv: swap, size: 16G}
-        - {vg: vg, lv: root, size: 30G}
-        - {vg: vg, lv: var, size: 10G}
-        - {vg: vg, lv: varlog, size: 5G}
-        - {vg: vg, lv: vartmp, size: 2G}
-        - {vg: vg, lv: home, size: 100%FREE}
+        # - {vg: vg, lv: swap, size: 16G}
+        # - {vg: vg, lv: root, size: 30G}
+        # - {vg: vg, lv: var, size: 10G}
+        # - {vg: vg, lv: varlog, size: 5G}
+        # - {vg: vg, lv: vartmp, size: 2G}
+        # - {vg: vg, lv: home, size: 100%FREE}
+        - { vg: vg, lv: swap, size: "{{ ansible_memory_mb.real.total / 2 }}" }
+        - { vg: vg, lv: root, size: "{{ root_size }}" }
+        - { vg: vg, lv: var, size: "{{ var_size }}" }
+        - { vg: vg, lv: varlog, size: "{{ varlog_size }}" }
+        - { vg: vg, lv: vartmp, size: "{{ vartmp_size }}" }
+        - { vg: vg, lv: home, size: 100%FREE }
                 
 - name: Format the partitions
   filesystem:
@@ -103,7 +117,7 @@
       set_fact:
         part_uuid: "{{ part_uuid + item.value }}"
       with_dict: "{{ ansible_device_links.uuids }}"
-      when: item.key.startswith(drive)
+      when: item.key.startswith(install_drive)
   
     - name: Enable swap volume
       command: swapon -U "{{ vg_uuid[5] }}"
@@ -217,7 +231,7 @@
 - name: Network configuration
   block:
     - name: Enable network services
-      command: arch-chroot /mnt systemctl enable systemd-networkd systemd-resolved sshd
+      command: arch-chroot /mnt systemctl enable systemd-networkd systemd-resolved
 
     - name: Link /etc/resolv.conf for compatibility with older Linux applications
       file:

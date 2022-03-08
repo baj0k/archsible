@@ -98,6 +98,7 @@
         update_cache: yes
         upgrade: yes
     
+# TODO: set this in the playbook variables
     - name: Install packages
       pacman:
         name:
@@ -110,6 +111,17 @@
           - rsync
           - wget
         state: present
+
+# TODO: add tasks for installtion of the seclists repository and msfvenom
+    - name: Install blackarch packages
+      pacman:
+        name:
+          #- burpsuite # TODO: add task for installing java
+          - gobuster
+          - nmap
+          - metasploit
+        state: present
+      when: blackarch
 
     - name: Synchronize pkgfile database
       systemd:
@@ -196,6 +208,6 @@
         - reflector.timer
         - pkgfile-update.timer
 
-- name: Import the hardening role
+- name: Import the hardening tasks
   include_tasks: hardening.yml
   when: hardening

@@ -5,6 +5,7 @@ xrdb -merge $XDG_CONFIG_HOME/xorg/Xresources &
 
 # Autostart 
 autorandr --change &
+crond -f "$XDG_CONFIG_HOME/crontab" &
 redshift -P -O 4200 &
 remap &
 xset s off -dpms &

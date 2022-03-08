@@ -1,6 +1,6 @@
 #!/bin/sh
 
-rdp=$(find "${XDG_DATA_HOME:?}/rdp/" -name "*.rdp" | sed 's/.*\/rdp\///' | sed 's/.rdp$//' | dmenu -i -p "Connect to:")
-user=$(echo '' | dmenu -i -p "Enter username:")
+rdp=$(find "${XDG_DATA_HOME:?}/rdp/" -name "*.rdp" | sed 's/.*\/rdp\///;s/.rdp$//' | dmenu -i -p "Connect to:")
+user=$(dmenu -i -p "Enter username:" <&-)
 password=$(pass homelab/rdp/"${user}")
 [ -n "${rdp}" ] && xfreerdp "${XDG_CONFIG_HOME:?}/rdp/${rdp}.rdp /p:${password} /u:${user}"

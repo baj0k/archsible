@@ -1,3 +1,4 @@
+# TODO: add task to install qemu-guest-agent on virtual machines (guests) (and enable the service)
 ---
 - hosts: workstations
   remote_user: root
@@ -5,10 +6,14 @@
     # Mirrorlist country code
     country: PL
 
-    # Drive to which the system will be installed
-    drive: nvme0n1
+    # Block devices selection and size
+    install_drive: nvme0n1
+    root_size: 30G
+    var_size: 10G
+    varlog_size: 5G
+    vartmp_size: 2G
 
-    # Set to true if you want to overwrite disk with random data
+    # Set to true if you want to overwrite disk with random data before installation
     shred: false
 
     # Configure wireless adapter

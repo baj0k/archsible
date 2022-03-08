@@ -19,14 +19,14 @@ Run the install.yml playbook with:
 $ ansible-playbook install.yml -i hosts --ask-pass
 
 Important information:
-- The LUKS1 format is used because grub doesn't yet support LUKS2 format. This should be changed if the situation changes.
+- The LUKS1 format is used because grub doesn't yet fully support LUKS2 format. This should be changed as soon as the code is patched.
 - Any installation tasks that are done in chroot are using a command ansible module. This is due to the current lack of possibility to execute ansible playbooks in the remote chroot.
 - In the dotfiles playbook there are task for installting the libxft-bgra package which is a patched version of libxft. Currently libxft has some troubles displaying some unicode glyphs.
 
 # Full disk encryption
 This setup utilizes the LVM on LUKS scenario using a single physical disk with two partitions.
 The EFI partition is unencrypted and stores the bootloader binary (GRUB) which asks for a passphrase before being executed. 
-The LUKS partition stores an encrypted LUKS container which is decrypted automatically with the key embedded in the initramfs loaded by the bootloader.
+The LUKS partition stores an encrypted LUKS container which is decrypted automatically with the key embedded in the initramfs that is loaded by the bootloader.
 
 How it works:
 After the machine is powered on, the bootloader (GRUB) asks for a passphrase to be unlocked and executed.
@@ -34,7 +34,6 @@ Bootloader takes the kernel image and the initramfs which are used to bring up t
 
 Security considerations:
 - With an encrypted boot partition, there is no option to modify user's kernel image or initramfs, but it would be still vulnerable to Evil Maid attacks.
-- User is required to enter their password only once during the boot process.
 - Randomness and length of the key makes it resistant to brute force and dictionary attacks.
-- If the plain text key is kept with tight permissions (000 root:root) the only possibility for the attacker to obtain the decryption key is to gain root privileges on the running system at which point the system has already been fully compromised.
+- If the plain text key is kept with tight permissions (000 root:root) the only possibility for the attacker to obtain the decryption key is to gain root privileges on the running system at which point the system should already be considered fully compromised.
 - GRUB doesn't yet support some of the LUKS 2 format features so the setup utilizes LUKS 1

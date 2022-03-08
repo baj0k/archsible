@@ -1,0 +1,13 @@
+#!/bin/bash
+# TODO: fix script with shellcheck
+
+services()
+{
+sm="dmenu -l 20 -fn Monospace-8 -p"
+s1=$(systemctl list-unit-files -t service --no-legend | $sm Service); s1=${s1/%service*/service}; [[ -z $s1 ]] && exit
+s2=$(echo -e "status\nstart\nstop\nrestart\nenable\ndisable" | $sm "Action"); [[ -z $s2 ]] && exit
+if [[ $s2 == "status" ]]; then unset s3; else s3="gksudo --"; fi
+eval $s3 systemctl --no-pager $s2 $s1 2>&1 | gxmessage -file - -title Services -center -fn "Monospace 8"
+} 
+
+services
