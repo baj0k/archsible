@@ -1,7 +1,25 @@
 ---
-- name: Cleanup the disk and set variables
-  tags: test
+- name: Detect disks, erase data and set variables
   block:
+    - name: Initialize storage devices list
+      set_fact:
+        storage_devices: []
+
+    - name: Get storage devices on which the system can be installed
+      set_fact:
+        storage_devices: "{{ storage_devices + [item.key] }}"
+      with_dict: "{{ ansible_devices }}"
+# TODO: currently supports QEMU, test it with virtualbox, vmware etc
+      when: "item.value.host.startswith('SATA controller:') and item.value.vendor != 'QEMU' or
+             item.value.host.startswith('SCSI storage controller:') or
+             item.value.host.startswith('Non-Volatile memory controller:')"
+
+# TODO: change this so that if more than one is available than the user is prompted to set this in variables
+    - name: Select drive for the installtion or fail if more than one is available
+      set_fact:
+        install_drive: "{{ storage_devices[0] }}"
+      failed_when: storage_devices | length != 1
+ 
     - name: Overwrite disk with random data
       command: shred -v --random-source=/dev/urandom -n1 /dev/{{ install_drive }}
       when: shred
@@ -13,12 +31,6 @@
     - name: Erase data structures from the disk
       command: wipefs -a "/dev/{{ install_drive }}"
 
-    - name: Initialize empty list
-      set_fact:
-        partitions: []
-        vg_uuid: []
-        part_uuid: []
-
     - name: Get processor architecture
       set_fact:
         proc: "{{ item|regex_replace( '^.*(Intel|AMD)', '\\1' ) | lower }}"
@@ -26,28 +38,26 @@
       when: "item.endswith('Intel') or
              item.endswith('AMD')"
 
-- name: Get processor architecture
-  set_fact:
-    proc: "{{ item|regex_replace( '^.*(Intel|AMD)', '\\1' ) | lower }}"
-  with_items: "{{ ansible_processor }}"
-  when: "item.endswith('Intel') or
-         item.endswith('AMD')"
-
 - name: Partition the disk
   block:
-    - name: Create EFI partition
-      command: sgdisk -n 1:0:551M -c 1:BOOT -t 1:ef00 "/dev/{{ install_drive }}"
-
-    - name: Create LUKS partition
-      command: sgdisk -n 0:0:0 -c 0:LUKS -t 0:8309 "/dev/{{ install_drive }}"
+    - name: Create EFI and LUKS partitions
+      parted:
+        device: "/dev/{{ install_drive }}"
+        number: "{{ item.number }}"
+        part_start: "{{ item.part_start }}"
+        part_end: "{{ item.part_end }}"
+        label: gpt
+        state: present
+      loop:
+        - { number: 1, part_start: 0%, part_end: 551MiB }
+        - { number: 2, part_start: 552MiB, part_end: 100% }
 
     - name: Update gathered facts
       setup:
 
-    - name: Get selected drive partitions
+    - name: Get drive partitions
       set_fact:
-        partitions: "{{ partitions + [item.key] }}"
-      with_dict: "{{ ansible_devices[install_drive].partitions }}"
+        partitions: "{{ ansible_devices[install_drive].partitions.keys() | sort }}"
 
 - name: Setup LVM on LUKS
   block:
@@ -74,12 +84,6 @@
         size: "{{ item.size }}"
         force: yes
       loop:
-        # - {vg: vg, lv: swap, size: 16G}
-        # - {vg: vg, lv: root, size: 30G}
-        # - {vg: vg, lv: var, size: 10G}
-        # - {vg: vg, lv: varlog, size: 5G}
-        # - {vg: vg, lv: vartmp, size: 2G}
-        # - {vg: vg, lv: home, size: 100%FREE}
         - { vg: vg, lv: swap, size: "{{ ansible_memory_mb.real.total / 2 }}" }
         - { vg: vg, lv: root, size: "{{ root_size }}" }
         - { vg: vg, lv: var, size: "{{ var_size }}" }
@@ -95,32 +99,21 @@
     force: yes
   loop:
     - {dev: "/dev/{{ partitions[0] }}", fstype: vfat, opts: -F32}
-    - {dev: /dev/mapper/vg-swap, fstype: swap, opts: }
-    - {dev: /dev/mapper/vg-root, fstype: ext4, opts: }
-    - {dev: /dev/mapper/vg-var, fstype: ext4, opts: }
-    - {dev: /dev/mapper/vg-varlog, fstype: ext4, opts: }
-    - {dev: /dev/mapper/vg-vartmp, fstype: ext4, opts: }
-    - {dev: /dev/mapper/vg-home, fstype: ext4, opts: }
+    - {dev: /dev/vg/swap, fstype: swap, opts: }
+    - {dev: /dev/vg/root, fstype: ext4, opts: }
+    - {dev: /dev/vg/var, fstype: ext4, opts: }
+    - {dev: /dev/vg/varlog, fstype: ext4, opts: }
+    - {dev: /dev/vg/vartmp, fstype: ext4, opts: }
+    - {dev: /dev/vg/home, fstype: ext4, opts: }
 
 - name: Mount the file systems
   block:
     - name: Update gathered facts
       setup:
 
-    - name: Get vg_uuids
+    - name: Get uuids
       set_fact:
-        vg_uuid: "{{ vg_uuid + item.value }}"
-      with_dict: "{{ ansible_device_links.uuids }}"
-      when: item.key.startswith("dm")
-  
-    - name: Get part_uuids
-      set_fact:
-        part_uuid: "{{ part_uuid + item.value }}"
-      with_dict: "{{ ansible_device_links.uuids }}"
-      when: item.key.startswith(install_drive)
-  
-    - name: Enable swap volume
-      command: swapon -U "{{ vg_uuid[5] }}"
+        uuids: "{{ ansible_device_links.uuids | replace('dm-', 'dm') }}"
 
     - name: Mount logical volumes
       mount:
@@ -130,12 +123,12 @@
         state: mounted
         passno: "{{ item.passno }}"
       loop:
-        - {path: /mnt, uuid: "{{ vg_uuid[4] }}", fs: ext4, passno: 1}
-        - {path: /mnt/efi, uuid: "{{ part_uuid[0] }}", fs: vfat, passno: 2}
-        - {path: /mnt/home, uuid: "{{ vg_uuid[0] }}", fs: ext4, passno: 2}
-        - {path: /mnt/var, uuid: "{{ vg_uuid[3] }}", fs: ext4, passno: 2}
-        - {path: /mnt/var/log, uuid: "{{ vg_uuid[2] }}", fs: ext4, passno: 2}
-        - {path: /mnt/var/tmp, uuid: "{{ vg_uuid[1] }}", fs: ext4, passno: 2}
+        - {path: /mnt, uuid: "{{ uuids.dm2[0] }}", fs: ext4, passno: 1}
+        - {path: /mnt/efi, uuid: "{{ uuids[partitions[0]][0] }}" , fs: vfat, passno: 2}
+        - {path: /mnt/var, uuid: "{{ uuids.dm3[0] }}", fs: ext4, passno: 2}
+        - {path: /mnt/var/log, uuid: "{{ uuids.dm4[0] }}", fs: ext4, passno: 2}
+        - {path: /mnt/var/tmp, uuid: "{{ uuids.dm5[0] }}", fs: ext4, passno: 2}
+        - {path: /mnt/home, uuid: "{{ uuids.dm6[0] }}", fs: ext4, passno: 2}
 
 - name: Select mirrors
   block:
@@ -211,7 +204,7 @@
         regexp: "{{ item.regex }}"
         line: "{{ item.line }}"
       loop:
-        - {regex: GRUB_CMDLINE_LINUX=, line: "GRUB_CMDLINE_LINUX='cryptdevice=UUID={{ part_uuid[1] }}:cryptlvm resume=UUID={{ part_uuid[1] }} cryptkey=rootfs:/root/secrets/luks-crypt.bin'"}
+        - {regex: GRUB_CMDLINE_LINUX=, line: "GRUB_CMDLINE_LINUX='cryptdevice=UUID={{ uuids[partitions[1]][0] }}:cryptlvm resume=UUID={{ uuids[partitions[1]][0] }} cryptkey=rootfs:/root/secrets/luks-crypt.bin'"}
         - {regex: GRUB_CMDLINE_LINUX_DEFAULT=, line: "GRUB_CMDLINE_LINUX_DEFAULT='loglevel=3 quiet net.ifnames=0'"}
         - {regex: GRUB_ENABLE_CRYPTODISK=, line: GRUB_ENABLE_CRYPTODISK=y}
         - {regex: GRUB_TIMEOUT=, line: GRUB_TIMEOUT=0}
