@@ -4,6 +4,9 @@
   remote_user: test
 
   vars:
+    # Keyboard settings
+    country: PL
+   
     # Copy user data from the ansible controller
     migrate: false
 
@@ -11,23 +14,23 @@
     aur_helper: yay
 
     # Include software specific tasks
-    aur: true
-    docker: true
-    dunst: true
-    firefox: true
-    git: true
-    i3: true
-    libvirt: true
-    mpd: true
-    mpv: true
-    ncmpcpp: true
-    neofetch: true
-    newsboat: true
-    neovim: true
-    ranger: true
-    suckless: true
-    tmux: true
-    zathura: true
+    aur: false
+    docker: false
+    dunst: false
+    firefox: false
+    git: false
+    i3: false
+    libvirt: false
+    mpd: false
+    mpv: false
+    ncmpcpp: false
+    neofetch: false
+    newsboat: false
+    neovim: false
+    ranger: false
+    suckless: false
+    tmux: false
+    zathura: false
     zsh: true
 
   pre_tasks:
@@ -38,10 +41,10 @@
   roles:
     - dotfiles
   
-      #  post_tasks:
-      #     - name: Reboot after installation is complete
-      #       become: yes
-      #       shell: sleep 2 && reboot
-      #       async: 5
-      #       poll: 0
-      #     - meta: end_host
+      # post_tasks:
+      #    - name: Reboot after installation is complete
+      #      become: yes
+      #      shell: sleep 2 && reboot
+      #      async: 5
+      #      poll: 0
+      #    - meta: end_host

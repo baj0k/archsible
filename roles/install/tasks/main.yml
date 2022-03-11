@@ -90,7 +90,7 @@
         - { vg: vg, lv: varlog, size: "{{ varlog_size }}" }
         - { vg: vg, lv: vartmp, size: "{{ vartmp_size }}" }
         - { vg: vg, lv: home, size: 100%FREE }
-                
+
 - name: Format the partitions
   filesystem:
     dev: "{{ item.dev }}"
@@ -137,7 +137,7 @@
         url: "https://archlinux.org/mirrorlist/?country={{ country }}&ip_version=4&use_mirror_status=on"
         dest: /etc/pacman.d/mirrorlist
         force: yes
-    
+
     - name: Uncomment mirrors
       replace:
         path: /etc/pacman.d/mirrorlist
@@ -256,7 +256,7 @@
     - name: Configure wireless adapter
       block:
         - name: Install wireless utility package
-          command: arch-chroot /mnt pacman -S "{{ wireless_utility }}" --noconfirm
+          command: arch-chroot /mnt pacman -S iwd --noconfirm
 
         - name: Configure wireless adapter
           blockinfile: 
@@ -271,7 +271,10 @@
               
               [DHCPv4]
               RouteMetric=20
-      when: wireless
+
+        - name: Enable wireless deamon
+          command: arch-chroot /mnt systemctl enable iwd
+      when: ansible_facts.wlan0 is defined
 
 - name: Create system user and setup root password
   block:

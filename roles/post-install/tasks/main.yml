@@ -102,6 +102,7 @@
     - name: Install packages
       pacman:
         name:
+          - autorandr
           - base-devel
           - dash
           - git
@@ -120,6 +121,9 @@
           - gobuster
           - nmap
           - metasploit
+          - gnu-netcat
+          - rlwrap
+          - openvpn
         state: present
       when: blackarch
 

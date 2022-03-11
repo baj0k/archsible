@@ -135,6 +135,98 @@
         - config
   when: git
 
+- name: GUI setup
+  block:
+    - name: Display server configuration
+      block:
+        - name: Xorg - Install packages
+          become: yes
+          pacman:
+            name: 
+              - xorg
+              - xorg-xinit
+              - xwallpaper
+              - xclip
+              - xcompmgr
+            state: present
+              
+        # TODO: fix for amd and nvidia drivers (current setup works for intel)
+        - name: Xorg - Install GPU drivers
+          become: yes
+          pacman:
+            name: 
+              - mesa
+              - lib32-mesa
+              - xf86-video-intel
+              - vulkan-intel
+              - xf86-video-fbdev
+              - intel-media-driver
+            state: present
+
+        - name: Xorg - Install fonts
+          become: yes
+          pacman:
+            name: 
+              - noto-fonts
+              - ttf-joypixels
+              - ttf-font-awesome
+              - ttf-dejavu
+              - ttf-inconsolata
+              - ttf-liberation
+            state: present
+
+        - name: Xorg - Create directories
+          file:
+            path: "{{ ansible_env.HOME }}/.config/xorg"
+            state: directory
+
+        - name: Xorg - Symlink configuration
+          file:
+            src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/xorg/{{ item }}"
+            path: "{{ ansible_env.HOME }}/.config/xorg/{{ item }}"
+            state: link
+          loop:
+            - Xresources
+            - xinitrc
+
+        - name: Xorg - Allow language specific characters in terminal
+          become: yes
+          blockinfile:
+            create: yes
+            path: /etc/X11/xorg.conf.d/00-keyboard.conf
+            block: |
+              Section "InputClass"
+                      Identifier "system-keyboard"
+                      MatchIsKeyboard "on"
+                      Option "XkbLayout" "{{ country | lower }}"
+              EndSection
+
+    - name: Window manager configuration
+      block:
+        - name: i3 - Install packages
+          become: yes
+          pacman:
+            name:
+              - i3-gaps
+              - i3blocks
+              - sxiv
+            state: present
+
+        - name: i3 - Create directories
+          file:
+            path: "{{ ansible_env.HOME }}/.config/i3"
+            state: directory
+
+        - name: i3 - Symlink configuration
+          file:
+            src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/i3/{{ item }}"
+            path: "{{ ansible_env.HOME }}/.config/i3/{{ item }}"
+            state: link
+          loop:
+            - config
+            - i3blocks
+  when: i3
+
 - name: Virtualisation configuration
   block:
     - name: Libvirt - Remove iptables
@@ -154,6 +246,8 @@
           - dnsmasq
           - dmidecode
           - virt-manager
+          - edk2-ovmf
+          - python-lxml
         state: present
 
     - name: Libvirt - Add user to libvirt group
@@ -170,18 +264,36 @@
         create: yes
         line: 'uri_default = "qemu:///system"'
 
-          # - name: Libvirt - Create directories
-          #   file:
-          #     path: "{{ ansible_env.HOME }}/.config/git"
-          #     state: directory
+    - name: Libvirt - Enable daemon
+      become: yes
+      systemd:
+        name: libvirtd
+        state: started
+        enabled: yes
 
-          # - name: Libvirt - Symlink configuration
-          #   file:
-          #     src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/git/{{ item }}"
-          #     path: "{{ ansible_env.HOME }}/.config/git/{{ item }}"
-          #     state: link
-          #   loop:
-          #     - config
+    - name: Libvirt - Create pool directories
+      file:
+        path: "{{ ansible_env.HOME }}/.local/share/libvirt/{{ item }}"
+        state: directory
+      loop:
+        - iso
+        - vm
+
+    - name: Libvirt - Create new storage pools
+      virt_pool:
+        autostart: yes
+        state: present
+        name: "{{ item }}"
+        xml: "
+        <pool type='dir'>
+          <name>{{ item }}</name>
+          <target>
+            <path>{{ ansible_env.HOME }}/.local/share/libvirt/{{ item }}</path>
+          </target>
+        </pool>"
+      loop:
+        - vm
+        - iso
   when: libvirt
 
 - name: Mpd configuration
@@ -300,18 +412,15 @@
         state: link
       loop:
         - config
+          # TODO: get rid of the tags file somehow
         - tags
         - urls
 
-          # TODO: test crontab
     - name: Newsboat - Add crontab tasks
       lineinfile:
         path: "{{ ansible_env.HOME }}/.config/crontab" 
-        line: "{{ item }}"
+        line: "*/10 * * * * /usr/bin/newsboat -x reload"
         create: true
-      loop:
-        - "@reboot /usr/bin/newsboat -x reload"
-        - "0/10 * * * * /usr/bin/newsboat -x reload"
   when: newsboat
 
 - name: Neovim configuration
@@ -324,6 +433,7 @@
           - shellcheck
         state: present
 
+          # TODO: test if the creation of directories is needed (file module, create: yes?)
     - name: Neovim - Create directories
       file:
         path: "{{ ansible_env.HOME }}/.config/nvim"
@@ -538,99 +648,15 @@
         - .zprofile
         - .zshenv
         - .zshrc
+
+    - name: Zsh - Create files for XDG workarounds
+      file:
+        path: "{{ ansible_env.HOME }}/.config/{{ item.path }}"
+        state: "{{ item.state }}"
+      loop:
+        - { state: directory, path: wget }
+        - { state: touch, path: wget/wgetrc }
   when: zsh
-
-- name: GUI setup
-  block:
-    - name: Display server configuration
-      block:
-        - name: Xorg - Install packages
-          become: yes
-          pacman:
-            name: 
-              - xorg
-              - xorg-xinit
-              - xwallpaper
-              - xclip
-              - xcompmgr
-            state: present
-              
-        # TODO: fix for amd and nvidia drivers (current setup works for intel)
-        - name: Xorg - Install GPU drivers
-          become: yes
-          pacman:
-            name: 
-              - mesa
-              - lib32-mesa
-              - xf86-video-intel
-              - vulkan-intel
-              - xf86-video-fbdev
-              - intel-media-driver
-            state: present
-
-        - name: Xorg - Install fonts
-          become: yes
-          pacman:
-            name: 
-              - noto-fonts
-              - ttf-joypixels
-              - ttf-font-awesome
-              - ttf-dejavu
-              - ttf-inconsolata
-              - ttf-liberation
-            state: present
-
-        - name: Xorg - Create directories
-          file:
-            path: "{{ ansible_env.HOME }}/.config/xorg"
-            state: directory
-
-        - name: Xorg - Symlink configuration
-          file:
-            src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/xorg/{{ item }}"
-            path: "{{ ansible_env.HOME }}/.config/xorg/{{ item }}"
-            state: link
-          loop:
-            - Xresources
-            - xinitrc
-
-        - name: Allow language specific characters in terminal
-          become:
-          blockinfile:
-            create: yes
-            path: /etc/X11/xorg.conf.d/00-keyboard.conf
-            block: |
-              Section "InputClass"
-                      Identifier "system-keyboard"
-                      MatchIsKeyboard "on"
-                      Option "XkbLayout" "{{ country | lower }}"
-              EndSection
-
-    - name: Window manager configuration
-      block:
-        - name: i3 - Install packages
-          become: yes
-          pacman:
-            name:
-              - i3-gaps
-              - i3blocks
-              - sxiv
-            state: present
-
-        - name: i3 - Create directories
-          file:
-            path: "{{ ansible_env.HOME }}/.config/i3"
-            state: directory
-
-        - name: i3 - Symlink configuration
-          file:
-            src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/i3/{{ item }}"
-            path: "{{ ansible_env.HOME }}/.config/i3/{{ item }}"
-            state: link
-          loop:
-            - config
-            - i3blocks
-  when: i3
 
 - name: Migrate data from ansible controller
   copy:

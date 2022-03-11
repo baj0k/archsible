@@ -3,23 +3,18 @@
 - hosts: workstations
   remote_user: root
   vars:
+    # Overwrite disk with random data before installation
+    shred: false
+
     # Mirrorlist country code
     country: PL
 
-      # Partitions size
-      # TODO: consider calculating them from total disk space and treat this as a fallback
-    root_size: 30G
+      # TODO: check whether swap is needed on vm and if not include the conditional
+    # Partitions size
+    root_size: 50G
     var_size: 10G
     varlog_size: 5G
     vartmp_size: 2G
-
-    # Set to true if you want to overwrite disk with random data before installation
-    shred: false
-
-    # TODO: check if gathered facts contain information about wireless network adapter and use it as conditional
-    # Configure wireless adapter
-    wireless: true
-    wireless_utility: iwd
 
     # Passwords & user configuration
     luks_password: test

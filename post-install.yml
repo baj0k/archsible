@@ -9,7 +9,7 @@
     blackarch: true
 
     # Configure audio & bluetooth
-    audio: true
+    audio: false
 
     # Localization settings
     region: Europe
