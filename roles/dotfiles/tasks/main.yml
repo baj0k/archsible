@@ -201,6 +201,29 @@
                       Option "XkbLayout" "{{ country | lower }}"
               EndSection
 
+        - name: Xorg - Get available video cards
+          command: find /sys/class/drm/ -name "card0-*" -printf "%f\n"
+          register: cards
+
+        - name: Xorg - Register connected monitors highest resolution
+          command: head -n 1 "/sys/class/drm/{{ item }}/modes"
+          register: modes
+          loop: "{{ cards.stdout_lines }}"
+
+        - name: Xorg - Configure monitor layout and resolution
+          become: yes
+          blockinfile:
+            create: yes
+            path: /etc/X11/xorg.conf.d/10-monitor.conf
+            block: |
+              Section "Monitor"
+                  Identifier  "{{ item.item.replace('card0-', '') }}"
+                  Option      "PreferredMode" "{{ item.stdout_lines[0] }}_60.00"
+                  Option      "Primary" "true"
+              EndSection
+          loop: "{{ modes.results }}"
+          when: item.stdout != ""
+
     - name: Window manager configuration
       block:
         - name: i3 - Install packages
@@ -488,46 +511,31 @@
       become: yes
       make:
         chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/dmenu"
-        target: "{{ item }}"
-      loop:
-        - install
-        - clean
+        target: cleaninstall
 
     - name: Suckless-builds - Install sent
       become: yes
       make:
         chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/sent"
-        target: "{{ item }}"
-      loop:
-        - install
-        - clean
+        target: cleaninstall
 
     - name: Suckless-builds - Install slock
       become: yes
       make:
         chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/slock"
-        target: "{{ item }}"
-      loop:
-        - install
-        - clean
+        target: cleaninstall
 
     - name: Suckless-builds - Install st
       become: yes
       make:
         chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/st"
-        target: "{{ item }}"
-      loop:
-        - install
-        - clean
+        target: cleaninstall
 
     - name: Suckless-builds - Install tabbed
       become: yes
       make:
         chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/tabbed"
-        target: "{{ item }}"
-      loop:
-        - install
-        - clean
+        target: cleaninstall
 
     - name: Suckless-builds - Remove libxft
       become: yes

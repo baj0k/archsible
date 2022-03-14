@@ -1,0 +1,97 @@
+---
+- name: Installation play
+  tags: install
+  hosts: vms
+  remote_user: root
+  vars:
+    # Overwrite disk with random data before installation
+    shred: false
+
+  pre_tasks:
+    - name: End the play if host is not booted from Arch Linux ISO
+      meta: end_host
+      when: ansible_facts.cmdline.archisolabel is not defined
+
+    - name: Verify the UEFI boot mode
+      stat:
+        path: /sys/firmware/efi/efivars
+      register: efivars
+      failed_when: efivars.stat.isdir is not defined
+
+    - name: Check internet connection
+      command: ping -c 1 -w 1 google.com
+      changed_when: False
+
+  roles:
+    - install
+
+  post_tasks:
+    - name: Reboot after installation is complete
+      shell: sleep 2 && reboot
+      async: 5
+      poll: 0
+    - meta: end_host
+
+- hosts: vms
+  remote_user: test
+  gather_facts: no
+  vars:
+    # Configure audio & bluetooth
+    audio: true
+
+    # Copy user data from the ansible controller
+    migrate: false
+
+    # Include software specific tasks
+    aur: true
+    docker: true
+    dunst: true
+    firefox: true
+    git: true
+    i3: true
+    libvirt: true
+    mpd: true
+    mpv: true
+    ncmpcpp: true
+    neofetch: true
+    newsboat: true
+    neovim: true
+    ranger: true
+    suckless: true
+    tmux: true
+    zathura: true
+    zsh: true
+
+  pre_tasks:
+    - name: Wait one minute for connection
+      wait_for_connection:
+        timeout: 60
+
+    - name: Check internet connection
+      command: ping -c 1 -w 1 google.com
+      changed_when: False
+
+    - name: Gather facts
+      setup:
+
+  roles:
+    - post-install
+    - blackarch
+    #- hardening
+    - dotfiles
+
+  post_tasks:
+    - name: Reboot after installation is complete
+      become: yes
+      shell: sleep 5 && reboot
+      async: 5
+      poll: 0
+
+    - name: Disable ssh daemon
+      become: yes
+      systemd:
+        name: sshd
+        enabled: no
+      async: 5
+      poll: 0
+    - meta: end_host

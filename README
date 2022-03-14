@@ -1,27 +1,32 @@
 archsible - ansible playbooks designed to ease and automate Arch Linux environment maintenance across multiple machines
 
-Playbooks in this repository are designed to ease the installation, configuration and hardening of the fresh arch Linux OS
+Playbooks in this repository are designed to ease the installation, configuration and hardening of the Arch Linux OS.
+Please note that the playbooks are heavily customized and might require some changes before being useful for anyone beside me.
 
-# Available playbooks:
+# Playbooks
+tbd
+
+# Roles
 - Minimal installation with full disk encryption
-- Post installation configuration and hardening
+- Post installation configuration
 - Setting up my dotfiles
 
 # Prerequisites
-- UEFI support enabled
+- UEFI support enabled on target machine
+- sshpass installed on ansible controller machine
 
 # Usage
-- Modify hosts file according to your needs
-- Modify variables inside the playbooks
+- Modify hosts.cfg file according to your needs
+- Modify variables inside the playbooks and in the group_vars folder
 - Boot the Arch Linux installation medium on target machine and set the root password with passwd command
 
-Run the install.yml playbook with:
-$ ansible-playbook install.yml -i hosts --ask-pass
+Run the chosen playbook with:
+$ ansible-playbook -i hosts.cfg --ask-pass playbook.yml
 
 Important information:
 - The LUKS1 format is used because grub doesn't yet fully support LUKS2 format. This should be changed as soon as the code is patched.
 - Any installation tasks that are done in chroot are using a command ansible module. This is due to the current lack of possibility to execute ansible playbooks in the remote chroot.
-- In the dotfiles playbook there are task for installting the libxft-bgra package which is a patched version of libxft. Currently libxft has some troubles displaying some unicode glyphs.
+- In the dotfiles playbook there are task for installing the libxft-bgra package which is a patched version of libxft. Currently libxft has some troubles displaying some unicode glyphs.
 
 # Full disk encryption
 This setup utilizes the LVM on LUKS scenario using a single physical disk with two partitions.

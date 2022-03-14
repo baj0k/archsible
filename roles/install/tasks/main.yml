@@ -1,3 +1,5 @@
+# TODO: add tasks for configuration inside of the kvm libvirt machine (check spice-vdagent for clipboard sharing)
+# TODO: check whether swap is needed on vm and if not include the conditional
 ---
 - name: Detect disks, erase data and set variables
   block:
@@ -224,7 +226,7 @@
 - name: Network configuration
   block:
     - name: Enable network services
-      command: arch-chroot /mnt systemctl enable systemd-networkd systemd-resolved
+      command: arch-chroot /mnt systemctl enable systemd-networkd systemd-resolved sshd
 
     - name: Link /etc/resolv.conf for compatibility with older Linux applications
       file:

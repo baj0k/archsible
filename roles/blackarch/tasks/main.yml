@@ -1,0 +1,23 @@
+---
+- name: Download blackarch setup script
+  get_url:
+    url: https://blackarch.org/strap.sh
+    dest: /tmp/strap.sh
+    
+- name: Setup blackarch repository
+  become: yes
+  command: "sh /tmp/strap.sh"
+
+# TODO: add tasks for installtion of the seclists repository and msfvenom
+- name: Install blackarch packages
+  become: yes
+  pacman:
+    name:
+      #- burpsuite # TODO: add task for installing java
+      - gobuster
+      - nmap
+      - metasploit
+      - gnu-netcat
+      - rlwrap
+      - openvpn
+    state: present

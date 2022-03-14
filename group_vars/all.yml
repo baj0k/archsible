@@ -1,0 +1,20 @@
+# Partitions size
+root_size: 50G
+var_size: 10G
+varlog_size: 5G
+vartmp_size: 2G
+
+# Localization settings
+region: Europe
+country: PL
+city: Warsaw
+hostname: TEST
+
+# Passwords & user configuration
+luks_password: test
+root_password: test
+user_username: test
+user_password: test
+
+# Self explanatory
+aur_helper: yay
