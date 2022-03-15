@@ -1,13 +1,29 @@
-#!/bin/bash
-# TODO: fix script with shellcheck
+#!/bin/sh
 
-services()
-{
-sm="dmenu -l 20 -fn Monospace-8 -p"
-s1=$(systemctl list-unit-files -t service --no-legend | $sm Service); s1=${s1/%service*/service}; [[ -z $s1 ]] && exit
-s2=$(echo -e "status\nstart\nstop\nrestart\nenable\ndisable" | $sm "Action"); [[ -z $s2 ]] && exit
-if [[ $s2 == "status" ]]; then unset s3; else s3="gksudo --"; fi
-eval $s3 systemctl --no-pager $s2 $s1 2>&1 | gxmessage -file - -title Services -center -fn "Monospace 8"
-} 
+service=$(systemctl list-unit-files -t service --no-legend --no-pager | cut -d' ' -f1 | dmenu -l 10 -p Service)
+[ -n "${service}" ] && action=$(printf "status\\nstart\\nstop\\nrestart\\nenable\\ndisable" | dmenu -l 6 -p "Action")
 
-services
+[ -n "${action}" ] && case "${action}" in
+    status)
+    res1="$(systemctl is-active "${service}")"
+    res2="$(systemctl is-enabled "${service}")"
+        notify-send "${service} is ${res1} and ${res2}" ;;
+
+    restart)
+        sudo systemctl --no-pager "${action}" "${service}" && notify-send "${service} restarted" ;;
+
+    start)
+        sudo systemctl --no-pager "${action}" "${service}"  && notify-send "${service} started" ;;
+
+    stop)
+        sudo systemctl --no-pager "${action}" "${service}"  && notify-send "${service} stopped" ;;
+
+    enable)
+        sudo systemctl --no-pager "${action}" "${service}"  && notify-send "${service} enabled" ;;
+
+    disable)
+        sudo systemctl --no-pager "${action}" "${service}"  && notify-send "${service} disabled" ;;
+
+    *) exit 0 ;;
+esac
+

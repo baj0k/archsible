@@ -2,12 +2,6 @@
 
 let mapleader = " "
 
-" Install vim-plug if not found
-if empty(glob('~/.local/share/nvim/site/autoload/plug.vim'))
-  silent !curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs
-    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-endif
-
 " Install missing plugins on startup
 autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
   \| PlugInstall --sync | source $MYVIMRC
@@ -16,8 +10,8 @@ autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
 " Plugins
     call plug#begin()
     Plug 'ncm2/ncm2'
-    "Plug 'SirVer/ultisnips'
-    "Plug 'honza/vim-snippets'
+    Plug 'SirVer/ultisnips'
+    Plug 'honza/vim-snippets'
     Plug 'jiangmiao/auto-pairs'
     Plug 'alec-gibson/nvim-tetris'
     Plug 'ThePrimeagen/vim-be-good'
@@ -53,43 +47,48 @@ autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
 	map <C-k> <C-w>k
 	map <C-l> <C-w>l
 
-" Custom shortcuts:
+"" Custom shortcuts:
 " Clear search highlight
-noremap <leader>/ :let @/ = ""<CR>
+    noremap <leader>/ :let @/ = ""<CR>
 
 " Open multiple files in new tabs
-command! -nargs=+ -complete=dir Tabnew argadd <args> | tab all
+    command! -nargs=+ -complete=dir Tabnew argadd <args> | tab all
 
-" Shellcheck
+" Shellcheck - use capital S to specify a shell
+    nnoremap <leader>s :!shellcheck -a --enable=all %:p -C'never' <CR>
+
     function AskForInput(x)
         redraw
         execute ":!clear && shellcheck -a --enable=all -s "a:x "-C'never' %"
     endfunction
 
-    noremap <leader>s :call AskForInput(input(""))<CR>
+    noremap <leader>S :call AskForInput(input(""))<CR>
+
+" Execute currently opened file
+    nnoremap <leader>./ :!"%:p" <CR>
 
 " Spell-Checking
     map <leader>l :setlocal spell!<CR>
 
 " Snippets plugin keybindings
-let g:UltiSnipsExpandTrigger="<tab>"
-let g:UltiSnipsJumpForwardTrigger="<c-l>"
-let g:UltiSnipsJumpBackwardTrigger="<c-h>"
+    let g:UltiSnipsExpandTrigger="<tab>"
+    let g:UltiSnipsJumpForwardTrigger="<c-l>"
+    let g:UltiSnipsJumpBackwardTrigger="<c-h>"
 
 " disable header folding
-let g:vim_markdown_folding_disabled = 1
+    let g:vim_markdown_folding_disabled = 1
 
 " do not use conceal feature, the implementation is not so good
-let g:vim_markdown_conceal = 0
+    let g:vim_markdown_conceal = 0
 
 " disable math tex conceal feature
-let g:tex_conceal = ""
-let g:vim_markdown_math = 1
+    let g:tex_conceal = ""
+    let g:vim_markdown_math = 1
 
 " support front matter of various format
-let g:vim_markdown_frontmatter = 1  " for YAML format
-let g:vim_markdown_toml_frontmatter = 1  " for TOML format
-let g:vim_markdown_json_frontmatter = 1  " for JSON format
+    let g:vim_markdown_frontmatter = 1  " for YAML format
+    let g:vim_markdown_toml_frontmatter = 1  " for TOML format
+    let g:vim_markdown_json_frontmatter = 1  " for JSON format
 
 " Run xrdb after .Xresources are updated
-autocmd BufWritePost *Xresources !xrdb %
+    autocmd BufWritePost *Xresources !xrdb %

@@ -7,6 +7,12 @@
     # Overwrite disk with random data before installation
     shred: false
 
+    # Configure full disk encryption
+    encrypt_disk: false
+
+    # Prepare system for dual-booting with windows 
+    dual_boot: false
+
   pre_tasks:
     - name: End the play if host is not booted from Arch Linux ISO
       meta: end_host
@@ -32,7 +38,8 @@
       poll: 0
     - meta: end_host
 
-- hosts: laptops
+- name: Post-installation play
+  hosts: laptops
   remote_user: test
   gather_facts: no
   vars:
@@ -66,6 +73,7 @@
     - name: Wait one minute for connection
       wait_for_connection:
         timeout: 60
+        delay: 10
 
     - name: Check internet connection
       command: ping -c 1 -w 1 google.com

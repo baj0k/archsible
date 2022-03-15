@@ -8,16 +8,22 @@
   become: yes
   command: "sh /tmp/strap.sh"
 
-# TODO: add tasks for installtion of the seclists repository and msfvenom
 - name: Install blackarch packages
   become: yes
   pacman:
     name:
-      #- burpsuite # TODO: add task for installing java
+      #- burpsuite
+      #- jre-openjdk
       - gobuster
       - nmap
       - metasploit
+      - msf-mpc
       - gnu-netcat
       - rlwrap
       - openvpn
     state: present
+
+- name: Clone SecLists repository
+  git:
+    repo: https://github.com/danielmiessler/SecLists.git
+    dest: "{{ ansible_env.HOME }}/.local/share/wordlists"

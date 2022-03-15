@@ -201,6 +201,10 @@
                       Option "XkbLayout" "{{ country | lower }}"
               EndSection
 
+        - name: Xorg - Initialize monitor resolution list
+          set_fact:
+            resolutions: []
+
         - name: Xorg - Get available video cards
           command: find /sys/class/drm/ -name "card0-*" -printf "%f\n"
           register: cards
@@ -210,19 +214,28 @@
           register: modes
           loop: "{{ cards.stdout_lines }}"
 
-        - name: Xorg - Configure monitor layout and resolution
+        - name: Xorg - Get card names and resolutions
+          set_fact:
+            resolutions: "{{ resolutions + [{'card': item.item.replace('card0-', ''),
+                                             'mode': item.stdout_lines[0]}] }}"
+          loop: "{{ modes.results }}"
+          when: item.stdout != ""
+
+        - name: Xorg - Configure monitor resolution
           become: yes
           blockinfile:
             create: yes
-            path: /etc/X11/xorg.conf.d/10-monitor.conf
+            path: "/etc/X11/xorg.conf.d/1{{ loop_index }}-{{ item.card }}.conf"
             block: |
               Section "Monitor"
-                  Identifier  "{{ item.item.replace('card0-', '') }}"
-                  Option      "PreferredMode" "{{ item.stdout_lines[0] }}_60.00"
+                  Identifier  "{{ item.card }}"
+                  Option      "PreferredMode" "{{ item.mode }}_60.00"
                   Option      "Primary" "true"
+                  Option      "LeftOf" "{{ item.card }}"
               EndSection
-          loop: "{{ modes.results }}"
-          when: item.stdout != ""
+          loop: "{{ resolutions }}"
+          loop_control:
+            index_var: loop_index
 
     - name: Window manager configuration
       block:
@@ -250,7 +263,7 @@
             - i3blocks
   when: i3
 
-- name: Virtualisation configuration
+- name: Libvirt configuration
   block:
     - name: Libvirt - Remove iptables
       become: yes
@@ -302,21 +315,26 @@
         - iso
         - vm
 
+    - name: Libvirt - Delete default pool
+      virt_pool:
+        state: deleted
+        name: default
+
     - name: Libvirt - Create new storage pools
       virt_pool:
         autostart: yes
         state: present
-        name: "{{ item }}"
+        name: "{{ item.name }}"
         xml: "
         <pool type='dir'>
-          <name>{{ item }}</name>
+          <name>{{ item.name }}</name>
           <target>
-            <path>{{ ansible_env.HOME }}/.local/share/libvirt/{{ item }}</path>
+            <path>{{ ansible_env.HOME }}/.local/share/libvirt/{{ item.path }}</path>
           </target>
         </pool>"
       loop:
-        - vm
-        - iso
+        - { name: default, path: vm }
+        - { name: iso, path: iso }
   when: libvirt
 
 - name: Mpd configuration
@@ -659,11 +677,12 @@
 
     - name: Zsh - Create files for XDG workarounds
       file:
-        path: "{{ ansible_env.HOME }}/.config/{{ item.path }}"
+        path: "{{ ansible_env.HOME }}/{{ item.path }}"
         state: "{{ item.state }}"
       loop:
-        - { state: directory, path: wget }
-        - { state: touch, path: wget/wgetrc }
+        - { state: directory, path: .config/wget }
+        - { state: touch, path: .config/wget/wgetrc }
+        - { state: directory, path: .local/share/zsh }
   when: zsh
 
 - name: Migrate data from ansible controller

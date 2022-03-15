@@ -2,10 +2,13 @@
 # TODO: check whether swap is needed on vm and if not include the conditional
 ---
 - name: Detect disks, erase data and set variables
+  tags: test
   block:
-    - name: Initialize storage devices list
+    - name: Initialize list variables
       set_fact:
         storage_devices: []
+        part_uuids: []
+        dm_uuids: []
 
     - name: Get storage devices on which the system can be installed
       set_fact:
@@ -26,6 +29,12 @@
       command: shred -v --random-source=/dev/urandom -n1 /dev/{{ install_drive }}
       when: shred
 
+    - name: Remove leftover volume groups
+      lvg:
+        vg: vg
+        state: absent
+        force: yes
+
     - name: Erase data structures from the partitions
       command: wipefs -a "/dev/{{ item }}"
       loop: "{{ ansible_devices[install_drive].partitions.keys() }}"
@@ -43,6 +52,7 @@
 - name: Partition the disk
   block:
     - name: Create EFI and LUKS partitions
+      tags: test
       parted:
         device: "/dev/{{ install_drive }}"
         number: "{{ item.number }}"
@@ -55,15 +65,16 @@
         - { number: 2, part_start: 552MiB, part_end: 100% }
 
     - name: Update gathered facts
+      tags: test
       setup:
 
     - name: Get drive partitions
+      tags: test
       set_fact:
         partitions: "{{ ansible_devices[install_drive].partitions.keys() | sort }}"
 
-- name: Setup LVM on LUKS
-  block:
     - name: Setup LUKS container
+      tags: test
       luks_device:
         device: "/dev/{{ partitions[1] }}"
         passphrase: "{{ luks_password }}"
@@ -72,14 +83,19 @@
           iteration_count: 420997
         name: cryptlvm
         state: opened
+      when: encrypt_disk
 
+- name: Setup LVM
+  block:
     - name: Setup physical volume and the volume group
+      tags: test
       lvg:
         vg: vg
-        pvs: /dev/mapper/cryptlvm
+        pvs: "{{ '/dev/mapper/cryptlvm' if encrypt_disk else '/dev/' + partitions[1] }}"
         force: yes
 
     - name: Setup logical volumes
+      tags: test
       lvol:
         vg: "{{ item.vg }}"
         lv: "{{ item.lv }}"
@@ -94,6 +110,7 @@
         - { vg: vg, lv: home, size: 100%FREE }
 
 - name: Format the partitions
+  tags: test
   filesystem:
     dev: "{{ item.dev }}"
     fstype: "{{ item.fstype }}"
@@ -109,13 +126,25 @@
     - {dev: /dev/vg/home, fstype: ext4, opts: }
 
 - name: Mount the file systems
+  tags: test
   block:
     - name: Update gathered facts
       setup:
 
-    - name: Get uuids
+    - name: Get dm_uuids
       set_fact:
-        uuids: "{{ ansible_device_links.uuids | replace('dm-', 'dm') }}"
+        dm_uuids: "{{ item.value + dm_uuids }}"
+      with_dict: "{{ ansible_device_links.uuids }}"
+      when: item.key.startswith('dm')
+
+    - name: Get part_uuids
+      set_fact:
+        part_uuids: "{{ part_uuids + item.value }}"
+      with_dict: "{{ ansible_device_links.uuids }}"
+      when: item.key.startswith(install_drive)
+
+    - name: Enable swap volume
+      command: swapon -U '{{ dm_uuids[0] }}'
 
     - name: Mount logical volumes
       mount:
@@ -125,12 +154,12 @@
         state: mounted
         passno: "{{ item.passno }}"
       loop:
-        - {path: /mnt, uuid: "{{ uuids.dm2[0] }}", fs: ext4, passno: 1}
-        - {path: /mnt/efi, uuid: "{{ uuids[partitions[0]][0] }}" , fs: vfat, passno: 2}
-        - {path: /mnt/var, uuid: "{{ uuids.dm3[0] }}", fs: ext4, passno: 2}
-        - {path: /mnt/var/log, uuid: "{{ uuids.dm4[0] }}", fs: ext4, passno: 2}
-        - {path: /mnt/var/tmp, uuid: "{{ uuids.dm5[0] }}", fs: ext4, passno: 2}
-        - {path: /mnt/home, uuid: "{{ uuids.dm6[0] }}", fs: ext4, passno: 2}
+        - {path: /mnt, uuid: "{{ dm_uuids[1] }}", fs: ext4, passno: 1}
+        - {path: /mnt/var, uuid: "{{ dm_uuids[2] }}", fs: ext4, passno: 2}
+        - {path: /mnt/var/log, uuid: "{{ dm_uuids[3] }}", fs: ext4, passno: 2}
+        - {path: /mnt/var/tmp, uuid: "{{ dm_uuids[4] }}", fs: ext4, passno: 2}
+        - {path: /mnt/home, uuid: "{{ dm_uuids[5] }}", fs: ext4, passno: 2}
+        - {path: /mnt/efi, uuid: "{{ part_uuids[0] }}" , fs: vfat, passno: 2}
 
 - name: Select mirrors
   block:
@@ -183,10 +212,17 @@
         new_keyfile: /mnt/root/secrets/luks-crypt.bin
         pbkdf: 
           iteration_count: 420997
+  when: encrypt_disk
 
 - name: Generate initramfs
   block:
-    - name: Add hooks and keyfile path to mkinitcpio.conf 
+    - name: Add lvm2 hooks to initramfs
+      lineinfile:
+        dest: /mnt/etc/mkinitcpio.conf
+        regexp: ^HOOKS= 
+        line: HOOKS=(base udev autodetect keyboard keymap modconf block lvm2 filesystems fsck)
+
+    - name: Add encryption hooks and keyfile path to initramfs
       lineinfile:
         dest: /mnt/etc/mkinitcpio.conf
         regexp: "{{ item.regex }}"
@@ -194,22 +230,35 @@
       loop:
         - {regex: ^HOOKS=, line: HOOKS=(base udev autodetect keyboard keymap modconf block encrypt lvm2 filesystems fsck)}
         - {regex: ^FILES=, line: FILES=(/root/secrets/luks-crypt.bin)}
+      when: encrypt_disk
 
     - name: Create new initramfs
       command: arch-chroot /mnt mkinitcpio -p linux
 
 - name: Bootloader configuration
   block:
-    - name: Set kernel parameters and configure grub
+    - name: Revert to traditional interface names
+      lineinfile:
+        dest: /mnt/etc/default/grub
+        regexp: GRUB_CMDLINE_LINUX_DEFAULT=
+        line: "GRUB_CMDLINE_LINUX_DEFAULT='loglevel=3 quiet net.ifnames=0'"
+
+    - name: Prepare grub for full disk encryption
       lineinfile:
         dest: /mnt/etc/default/grub
         regexp: "{{ item.regex }}"
         line: "{{ item.line }}"
       loop:
-        - {regex: GRUB_CMDLINE_LINUX=, line: "GRUB_CMDLINE_LINUX='cryptdevice=UUID={{ uuids[partitions[1]][0] }}:cryptlvm resume=UUID={{ uuids[partitions[1]][0] }} cryptkey=rootfs:/root/secrets/luks-crypt.bin'"}
-        - {regex: GRUB_CMDLINE_LINUX_DEFAULT=, line: "GRUB_CMDLINE_LINUX_DEFAULT='loglevel=3 quiet net.ifnames=0'"}
+        - {regex: GRUB_CMDLINE_LINUX=, line: "GRUB_CMDLINE_LINUX='cryptdevice=UUID={{ part_uuids[1] }}:cryptlvm resume=UUID={{ part_uuids[1] }} cryptkey=rootfs:/root/secrets/luks-crypt.bin'"}
         - {regex: GRUB_ENABLE_CRYPTODISK=, line: GRUB_ENABLE_CRYPTODISK=y}
-        - {regex: GRUB_TIMEOUT=, line: GRUB_TIMEOUT=0}
+      when: encrypt_disk
+
+    - name: Skip grub boot menu
+      lineinfile:
+        dest: /mnt/etc/default/grub
+        regexp: GRUB_TIMEOUT=
+        line: GRUB_TIMEOUT=0
+      when: dual_boot
 
     - name: Install bootloader
       command: arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB

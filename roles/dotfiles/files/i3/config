@@ -1,22 +1,24 @@
-# i3 config file
+# Select modkey
 set $mod Mod4
 
-# reload config
+# Reload config
 bindsym $mod+Shift+r exec "i3-msg restart"
 
 # Set wallpaper after startup
 exec_always --no-startup-id "${XDG_BIN_HOME}/setbg"
 
 # Screenshot utility, fallback to different keysym on specific keyboards
+# TODO: fix prtsc script
 bindsym Print exec --no-startup-id "${XDG_BIN_HOME}/prtsc"
 bindsym Menu exec --no-startup-id "${XDG_BIN_HOME}/prtsc"
 bindsym Shift+Print --release exec --no-startup-id "scrot -s /tmp/screenshot-$(date +%F_%T).png -e 'xclip -selection c -t image/png < $f'"
 bindsym Shift+Menu --release exec --no-startup-id "scrot -s /tmp/screenshot-$(date +%F_%T).png -e 'xclip -selection c -t image/png < $f'"
 
-# brightness
+# Brightness
 bindsym XF86MonBrightnessUp exec pkill -RTMIN+13 i3blocks
 bindsym XF86MonBrightnessDown exec pkill -RTMIN+13 i3blocks
 
+# TODO: change to pipewire bindings
 # Pulseaudio media key bindings
 set $refresh_i3status killall -SIGUSR1 i3status
 bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +5% && pkill -RTMIN+12 i3blocks
@@ -28,9 +30,9 @@ bindcode 172 exec --no-startup-id mpc toggle && pkill -RTMIN+11 i3blocks
 bindcode 173 exec --no-startup-id mpc prev && pkill -RTMIN+11 i3blocks
 bindcode 174 exec --no-startup-id mpc stop && pkill -RTMIN+11 i3blocks
 
-# yt-dlp integration
+# Scripts execution
 bindsym $mod+y exec --no-startup-id yt
-
+bindsym $mod+s exec --no-startup-id dmenusystemdhandler
 
 # Floating windows for specific applications
 for_window [class="mpv"] floating enable

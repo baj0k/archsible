@@ -1,19 +1,20 @@
-archsible - ansible playbooks designed to ease and automate Arch Linux environment maintenance across multiple machines
+archsible - ansible playbooks designed automate the deployment of Arch Linux environment across different machines.
 
 Playbooks in this repository are designed to ease the installation, configuration and hardening of the Arch Linux OS.
-Please note that the playbooks are heavily customized and might require some changes before being useful for anyone beside me.
+Please note that the playbooks are heavily customized and might require some changes before being useful for anyone besides me.
 
 # Playbooks
-tbd
+Each playbook consists of two plays - installation of the base Arch Linux OS and post-installation configuration including the deployment of my dotfiles.
 
 # Roles
-- Minimal installation with full disk encryption
-- Post installation configuration
-- Setting up my dotfiles
+- System installation with full disk encryption
+- General post-installation configuration
+- Blackarch repository configuration
+- Dotfiles deployment
 
 # Prerequisites
 - UEFI support enabled on target machine
-- sshpass installed on ansible controller machine
+- sshpass installed on the ansible controller
 
 # Usage
 - Modify hosts.cfg file according to your needs
@@ -23,7 +24,7 @@ tbd
 Run the chosen playbook with:
 $ ansible-playbook -i hosts.cfg --ask-pass playbook.yml
 
-Important information:
+Important information: (Below cases should be considered workarounds and fixed as soon as possible)
 - The LUKS1 format is used because grub doesn't yet fully support LUKS2 format. This should be changed as soon as the code is patched.
 - Any installation tasks that are done in chroot are using a command ansible module. This is due to the current lack of possibility to execute ansible playbooks in the remote chroot.
 - In the dotfiles playbook there are task for installing the libxft-bgra package which is a patched version of libxft. Currently libxft has some troubles displaying some unicode glyphs.

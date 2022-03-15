@@ -10,11 +10,11 @@ task=$(printf "stream video\nstream audio\ndownload video\ndownload audio" | dme
     stream\ audio)
         mpv --ytdl-format='bestaudio/best' --no-video ytdl://ytsearch:"${src}" ;;
 
-        # TODO: test download video case
     download\ video)
-        yt-dlp -o "${HOME}/videos/%(title)s.%(ext)s" --restrict-filenames -ic -f 'bestvideo[height<=?1080][vcodec!=vp9]+bestaudio/best' --hls-prefer-ffmpeg ytsearch:"${src}" ;;
+        yt-dlp -o "${HOME}/videos/%(title)s.%(ext)s" --restrict-filenames -ic -f 'bestvideo[height<=?1080][vcodec!=vp9]+bestaudio/best' --hls-prefer-ffmpeg ytsearch:"${src}" && notify-send "Downloaded video ${src}" ;;
 
     download\ audio)
-        yt-dlp -o "${HOME}/music/%(artist)s-%(title)s.%(ext)s" --restrict-filenames -xic -f bestaudio/best --hls-prefer-ffmpeg ytsearch:"${src}" ;;
+        yt-dlp -o "${HOME}/music/%(artist)s-%(title)s.%(ext)s" --restrict-filenames -xic -f bestaudio/best --hls-prefer-ffmpeg ytsearch:"${src}" && notify-send "Downloaded audio ${src}" ;;
+
     *) exit 0 ;;
 esac

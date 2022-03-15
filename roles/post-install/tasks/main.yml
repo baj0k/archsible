@@ -87,6 +87,7 @@
         upgrade: yes
     
 # TODO: set this in the playbook variables
+# TODO: autorandr should be installed on laptops only
     - name: Install packages
       pacman:
         name:
