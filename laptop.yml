@@ -8,7 +8,7 @@
     shred: false
 
     # Configure full disk encryption
-    encrypt_disk: false
+    encrypt_disk: true
 
     # Prepare system for dual-booting with windows 
     dual_boot: false
@@ -43,37 +43,14 @@
   remote_user: test
   gather_facts: no
   vars:
-    # Configure audio & bluetooth
-    audio: true
-
     # Copy user data from the ansible controller
     migrate: false
-
-    # Include software specific tasks
-    aur: true
-    docker: true
-    dunst: true
-    firefox: true
-    git: true
-    i3: true
-    libvirt: true
-    mpd: true
-    mpv: true
-    ncmpcpp: true
-    neofetch: true
-    newsboat: true
-    neovim: true
-    ranger: true
-    suckless: true
-    tmux: true
-    zathura: true
-    zsh: true
 
   pre_tasks:
     - name: Wait one minute for connection
       wait_for_connection:
         timeout: 60
-        delay: 10
+        delay: 5
 
     - name: Check internet connection
       command: ping -c 1 -w 1 google.com
@@ -85,7 +62,7 @@
   roles:
     - post-install
     - blackarch
-    #- hardening
+    - hardening
     - dotfiles
 
   post_tasks:

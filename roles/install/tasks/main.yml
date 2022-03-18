@@ -1,5 +1,3 @@
-# TODO: add tasks for configuration inside of the kvm libvirt machine (check spice-vdagent for clipboard sharing)
-# TODO: check whether swap is needed on vm and if not include the conditional
 ---
 - name: Detect disks, erase data and set variables
   tags: test
@@ -258,7 +256,7 @@
         dest: /mnt/etc/default/grub
         regexp: GRUB_TIMEOUT=
         line: GRUB_TIMEOUT=0
-      when: dual_boot
+      when: not dual_boot
 
     - name: Install bootloader
       command: arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB

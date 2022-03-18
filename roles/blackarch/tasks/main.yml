@@ -12,8 +12,8 @@
   become: yes
   pacman:
     name:
-      #- burpsuite
-      #- jre-openjdk
+      - burpsuite
+      - jre-openjdk
       - gobuster
       - nmap
       - metasploit
@@ -27,3 +27,4 @@
   git:
     repo: https://github.com/danielmiessler/SecLists.git
     dest: "{{ ansible_env.HOME }}/.local/share/wordlists"
+    depth: 1

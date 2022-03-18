@@ -173,6 +173,7 @@
               - ttf-dejavu
               - ttf-inconsolata
               - ttf-liberation
+              - adobe-source-han-sans-otc-fonts
             state: present
 
         - name: Xorg - Create directories
@@ -201,26 +202,49 @@
                       Option "XkbLayout" "{{ country | lower }}"
               EndSection
 
-        - name: Xorg - Initialize monitor resolution list
+        - name: Xorg - Initialize list variables
           set_fact:
+            card_names: []
+            consistent_names: []
             resolutions: []
 
-        - name: Xorg - Get available video cards
+        - name: Xorg - Get available video outputs
           command: find /sys/class/drm/ -name "card0-*" -printf "%f\n"
           register: cards
 
-        - name: Xorg - Register connected monitors highest resolution
+        - name: Xorg - Register highest resolution of available displays
           command: head -n 1 "/sys/class/drm/{{ item }}/modes"
           register: modes
           loop: "{{ cards.stdout_lines }}"
 
-        - name: Xorg - Get card names and resolutions
+        - name: Xorg - Get connected displays
           set_fact:
-            resolutions: "{{ resolutions + [{'card': item.item.replace('card0-', ''),
-                                             'mode': item.stdout_lines[0]}] }}"
+            card_names: "{{ card_names + [item] }}"
           loop: "{{ modes.results }}"
           when: item.stdout != ""
 
+        - name: Xorg - Get xrandr output names
+          shell: "xrandr -display :0 | awk '$2 == \"connected\"{print $1}'"
+          register: displays
+
+        - name: Xorg - Fix inconsistent video output names
+          set_fact:
+            consistent_names: "{{ consistent_names + [item] }}"
+          loop: "{{ displays.stdout_lines }}"
+          loop_control:
+            index_var: loop_index
+          when: item != card_names[loop_index].item.replace('card0-', '')
+          
+        - name: Xorg - Get available displays names and resolutions
+          set_fact:
+            resolutions: "{{ resolutions + [{'card': consistent_names[loop_index] |
+                                                     default(item.item.replace('card0-', '')),
+                                             'mode': item.stdout_lines[0]}] }}"
+          loop: "{{ card_names }}"
+          loop_control:
+            index_var: loop_index
+          when: item.stdout != ""
+        
         - name: Xorg - Configure monitor resolution
           become: yes
           blockinfile:
@@ -229,13 +253,59 @@
             block: |
               Section "Monitor"
                   Identifier  "{{ item.card }}"
-                  Option      "PreferredMode" "{{ item.mode }}_60.00"
+                  Option      "PreferredMode" "{{ display_resolution | default(item.mode) }}"
                   Option      "Primary" "true"
-                  Option      "LeftOf" "{{ item.card }}"
               EndSection
           loop: "{{ resolutions }}"
           loop_control:
             index_var: loop_index
+        
+        - name: Xorg - Configure monitor layout
+          become: yes
+          lineinfile:
+            path: "/etc/X11/xorg.conf.d/1{{ ansible_loop.index0 }}-{{ item.card }}.conf"
+            regex: Option      "Primary" "true"
+            line: '    Option      "LeftOf" "{{ ansible_loop.previtem.card }}"'
+          loop: "{{ resolutions }}"
+          loop_control:
+            extended: yes
+          when: resolutions | length > 1 and ansible_loop.index0 != 0
+
+        # - name: Xorg - Initialize monitor resolution list
+        #   set_fact:
+        #     resolutions: []
+
+        # - name: Xorg - Get available video cards
+        #   command: find /sys/class/drm/ -name "card0-*" -printf "%f\n"
+        #   register: cards
+
+        # - name: Xorg - Register connected monitors highest resolution
+        #   command: head -n 1 "/sys/class/drm/{{ item }}/modes"
+        #   register: modes
+        #   loop: "{{ cards.stdout_lines }}"
+
+        # - name: Xorg - Get card names and resolutions
+        #   set_fact:
+        #     resolutions: "{{ resolutions + [{'card': item.item.replace('card0-', ''),
+        #                                      'mode': item.stdout_lines[0]}] }}"
+        #   loop: "{{ modes.results }}"
+        #   when: item.stdout != ""
+
+        # - name: Xorg - Configure monitor resolution
+        #   become: yes
+        #   blockinfile:
+        #     create: yes
+        #     path: "/etc/X11/xorg.conf.d/1{{ loop_index }}-{{ item.card }}.conf"
+        #     block: |
+        #       Section "Monitor"
+        #           Identifier  "{{ item.card }}"
+        #           Option      "PreferredMode" "{{ item.mode }}"
+        #           Option      "Primary" "true"
+        #           #Option      "LeftOf" "{{ item.card }}"
+        #       EndSection
+        #   loop: "{{ resolutions }}"
+        #   loop_control:
+        #     index_var: loop_index
 
     - name: Window manager configuration
       block:
@@ -474,7 +544,6 @@
           - shellcheck
         state: present
 
-          # TODO: test if the creation of directories is needed (file module, create: yes?)
     - name: Neovim - Create directories
       file:
         path: "{{ ansible_env.HOME }}/.config/nvim"

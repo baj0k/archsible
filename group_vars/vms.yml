@@ -1,0 +1,40 @@
+---
+# Overwrite disk with random data before installation
+shred: false
+
+# Configure full disk encryption
+encrypt_disk: false
+
+# Prepare system for dual-booting with windows 
+dual_boot: false
+
+# Machine specific software
+software:
+  - spice-vdagent
+  - xf86-video-qxl
+
+# Enforce display resolution
+display_resolution: 2048x1152
+
+# Configure audio & bluetooth
+audio: false
+
+# Include software specific tasks
+aur: true
+docker: true
+dunst: true
+firefox: true
+git: true
+i3: true
+libvirt: false
+mpd: false
+mpv: false
+ncmpcpp: false
+neofetch: true
+newsboat: false
+neovim: true
+ranger: true
+suckless: true
+tmux: true
+zathura: true
+zsh: true

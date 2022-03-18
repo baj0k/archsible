@@ -8,7 +8,6 @@ bindsym $mod+Shift+r exec "i3-msg restart"
 exec_always --no-startup-id "${XDG_BIN_HOME}/setbg"
 
 # Screenshot utility, fallback to different keysym on specific keyboards
-# TODO: fix prtsc script
 bindsym Print exec --no-startup-id "${XDG_BIN_HOME}/prtsc"
 bindsym Menu exec --no-startup-id "${XDG_BIN_HOME}/prtsc"
 bindsym Shift+Print --release exec --no-startup-id "scrot -s /tmp/screenshot-$(date +%F_%T).png -e 'xclip -selection c -t image/png < $f'"
@@ -18,8 +17,7 @@ bindsym Shift+Menu --release exec --no-startup-id "scrot -s /tmp/screenshot-$(da
 bindsym XF86MonBrightnessUp exec pkill -RTMIN+13 i3blocks
 bindsym XF86MonBrightnessDown exec pkill -RTMIN+13 i3blocks
 
-# TODO: change to pipewire bindings
-# Pulseaudio media key bindings
+# Media key bindings
 set $refresh_i3status killall -SIGUSR1 i3status
 bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +5% && pkill -RTMIN+12 i3blocks
 bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -5% && pkill -RTMIN+12 i3blocks

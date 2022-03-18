@@ -86,12 +86,9 @@
         update_cache: yes
         upgrade: yes
     
-# TODO: set this in the playbook variables
-# TODO: autorandr should be installed on laptops only
     - name: Install packages
       pacman:
         name:
-          - autorandr
           - base-devel
           - dash
           - git

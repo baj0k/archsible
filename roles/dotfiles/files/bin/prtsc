@@ -1,14 +1,14 @@
 #!/bin/sh
 
-screen=$(printf "left\ncenter\nright" | dmenu -i -p "Select screen:")
+screen=$(printf "left\nright" | dmenu -i -p "Select screen:")
+resolution=$(xrandr -q | grep "\*" | sed 1q | cut -d' ' -f4)
 
 case "${screen}" in
     left) ;;
-    center) offset="${DISPLAY}+1920x1080" ;;
-    right) offset="${DISPLAY}+3840x2160" ;;
+    right) offset="${DISPLAY}+${resolution}" ;;
     *) exit 0 ;;
 esac
 
 filename="$(date +%F_%T)"
-ffmpeg -y -nostats -loglevel 0 -f x11grab -video_size "1920x1080" -i "${offset}" -vframes 1 "/tmp/screenshot-${filename}.png"
-cat "/tmp/screenshot-${filename}.png" | xclip -selection c -t image/png
+ffmpeg -y -nostats -loglevel 0 -f x11grab -video_size "${resolution}" -i "${offset}" -vframes 1 "/tmp/screenshot-${filename}.png"
+xclip -selection c -t image/png < "/tmp/screenshot-${filename}.png"
