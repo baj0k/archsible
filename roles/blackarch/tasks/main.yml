@@ -13,18 +13,14 @@
   pacman:
     name:
       - burpsuite
-      - jre-openjdk
+      - gnu-netcat
       - gobuster
-      - nmap
+      - jre-openjdk
       - metasploit
       - msf-mpc
-      - gnu-netcat
-      - rlwrap
+      - nmap
       - openvpn
+      - rlwrap
+      - seclists
     state: present
 
-- name: Clone SecLists repository
-  git:
-    repo: https://github.com/danielmiessler/SecLists.git
-    dest: "{{ ansible_env.HOME }}/.local/share/wordlists"
-    depth: 1

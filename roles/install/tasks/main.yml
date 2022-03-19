@@ -159,22 +159,37 @@
         - {path: /mnt/home, uuid: "{{ dm_uuids[5] }}", fs: ext4, passno: 2}
         - {path: /mnt/efi, uuid: "{{ part_uuids[0] }}" , fs: vfat, passno: 2}
 
-- name: Select mirrors
+- name: Pacman configuration
   block:
-    - name: Download mirrorlist
-      get_url:
-        url: "https://archlinux.org/mirrorlist/?country={{ country }}&ip_version=4&use_mirror_status=on"
-        dest: /etc/pacman.d/mirrorlist
-        force: yes
+    - name: Synchronize pacman database
+      pacman:
+        update_cache: yes
+    
+    - name: Install reflector and aria2
+      pacman:
+        name:
+          - reflector
+          - aria2
 
-    - name: Uncomment mirrors
-      replace:
-        path: /etc/pacman.d/mirrorlist
-        regexp: \#Server
-        replace: Server
+    - name: Configure reflector
+      lineinfile:
+        path: /etc/xdg/reflector/reflector.conf
+        regexp: "^#*\\s*--country"
+        line: "{{ '--country ' + country|lower + ',' }}"
+
+    - name: Rank mirrors
+      systemd:
+        name: reflector
+        state: started
+
+    - name: Use aria2 for pacman downloads
+      lineinfile:
+        dest: /etc/pacman.conf
+        regexp: XferCommand = 
+        line: "XferCommand = /usr/bin/aria2c --allow-overwrite=true --continue=true --file-allocation=none --log-level=error --max-tries=2 --max-connection-per-server=2 --max-file-not-found=5 --min-split-size=5M --no-conf --remote-time=true --summary-interval=60 --timeout=5 --dir=/ --out %o %u"
 
 - name: Install essential packages
-  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub openssh python sudo dash "{{ proc }}-ucode"
+  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub openssh python sudo dash aria2 "{{ proc }}-ucode"
 
 - name: Generate fstab
   block:
