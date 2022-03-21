@@ -1,47 +1,28 @@
 # TODO: add acpi if needed and check if acpi is needed on desktop or laptop only?
 # TODO: add symlinks for user.js chrome.css in firefox tasks
 ---
-- name: Home directory setup
+- name: Further home directory setup
   block:
     - name: Create workspace directories
       file:
         path: "{{ item }}"
         state: directory
       loop:
-        - "{{ ansible_env.HOME }}/.cache"
-        - "{{ ansible_env.HOME }}/.config"
-        - "{{ ansible_env.HOME }}/.local"
         - "{{ ansible_env.HOME }}/ctf"
-        - "{{ ansible_env.HOME }}/downloads"
-        - "{{ ansible_env.HOME }}/fieldwork"
         - "{{ ansible_env.HOME }}/music"
         - "{{ ansible_env.HOME }}/pictures"
-        - "{{ ansible_env.HOME }}/repos"
         - "{{ ansible_env.HOME }}/tmp"
         - "{{ ansible_env.HOME }}/videos"
 
-    - name: Clone archsible repository
-      git:
-        repo: https://github.com/baj0k/archsible.git
-        dest: "{{ ansible_env.HOME }}/repos/archsible"
-
-    - name: Symlink user-dirs.dirs
+    - name: Symlink files and directories
       file:
-        src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/user-dirs.dirs"
-        path: "{{ ansible_env.HOME }}/.config/user-dirs.dirs"
+        src: "{{ item.src }}"
+        path: "{{ item.path }}"
         state: link
-
-    - name: Symlink locale.conf
-      file:
-        src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/locale.conf"
-        path: "{{ ansible_env.HOME }}/.config/locale.conf"
-        state: link
-
-    - name: Symlink user scripts
-      file:
-        src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/bin"
-        path: "{{ ansible_env.HOME }}/.local/bin"
-        state: link
+      loop:
+        - { src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/user-dirs.dirs", path: "{{ ansible_env.HOME }}/.config/user-dirs.dirs" }
+        - { src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/locale.conf", path: "{{ ansible_env.HOME }}/.config/locale.conf" }
+        - { src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/bin", path: "{{ ansible_env.HOME }}/.local/bin" }
 
 - name: AUR helper configuration
   block:
@@ -270,42 +251,6 @@
           loop_control:
             extended: yes
           when: resolutions | length > 1 and ansible_loop.index0 != 0
-
-        # - name: Xorg - Initialize monitor resolution list
-        #   set_fact:
-        #     resolutions: []
-
-        # - name: Xorg - Get available video cards
-        #   command: find /sys/class/drm/ -name "card0-*" -printf "%f\n"
-        #   register: cards
-
-        # - name: Xorg - Register connected monitors highest resolution
-        #   command: head -n 1 "/sys/class/drm/{{ item }}/modes"
-        #   register: modes
-        #   loop: "{{ cards.stdout_lines }}"
-
-        # - name: Xorg - Get card names and resolutions
-        #   set_fact:
-        #     resolutions: "{{ resolutions + [{'card': item.item.replace('card0-', ''),
-        #                                      'mode': item.stdout_lines[0]}] }}"
-        #   loop: "{{ modes.results }}"
-        #   when: item.stdout != ""
-
-        # - name: Xorg - Configure monitor resolution
-        #   become: yes
-        #   blockinfile:
-        #     create: yes
-        #     path: "/etc/X11/xorg.conf.d/1{{ loop_index }}-{{ item.card }}.conf"
-        #     block: |
-        #       Section "Monitor"
-        #           Identifier  "{{ item.card }}"
-        #           Option      "PreferredMode" "{{ item.mode }}"
-        #           Option      "Primary" "true"
-        #           #Option      "LeftOf" "{{ item.card }}"
-        #       EndSection
-        #   loop: "{{ resolutions }}"
-        #   loop_control:
-        #     index_var: loop_index
 
     - name: Window manager configuration
       block:

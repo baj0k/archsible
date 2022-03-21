@@ -39,6 +39,7 @@
 
   pre_tasks:
     - name: Wait one minute for connection
+      tags: install
       wait_for_connection:
         timeout: 60
         delay: 5
@@ -52,9 +53,9 @@
 
   roles:
     - post-install
-    - blackarch
-    - hardening
     - dotfiles
+    - hardening
+    - blackarch
 
   post_tasks:
     - name: Reboot after installation is complete

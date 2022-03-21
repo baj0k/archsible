@@ -54,13 +54,58 @@
         insertafter: "{{ item.insertafter }}"
       loop:
         - {regex: Architecture, line: Architecture = x86_64, insertafter: }
-        - {regex: XferCommand =, line: "XferCommand = /usr/bin/aria2c --allow-overwrite=true --continue=true --file-allocation=none --log-level=error --max-tries=2 --max-connection-per-server=2 --max-file-not-found=5 --min-split-size=5M --no-conf --remote-time=true --summary-interval=60 --timeout=5 --dir=/ --out %o %u", insertafter: }
+        - {regex: XferCommand =, line: "XferCommand = /usr/local/bin/pacman-aria2 %u", insertafter: }
         - {regex: Color, line: Color, insertafter: }
         - {regex: ILoveCandy, line: ILoveCandy, insertafter: Color}
         - {regex: ParallelDownloads, line: ParallelDownloads = 5, insertafter: }
         - {regex: NoExtract, line: NoExtract = mirrorlist.pacnew, insertafter: }
         - {regex: '^#\[multilib\]$', line: "[multilib]", insertafter: }
         - {regex: Include = /etc/pacman.d/mirrorlist, line: Include = /etc/pacman.d/mirrorlist, insertafter: "[multilib]" }
+
+    - name: Create pacman-aria2 script
+      blockinfile: 
+        path: /usr/local/bin/pacman-aria2
+        create: true
+        mode: +x
+        block: |
+          #!/bin/sh
+          f=$(printf '%s' "$1" | awk -F/ '{print $NF}')
+          echo Downloading "${f}" && /usr/bin/aria2c --conf-path=/etc/pacman.d/pacman-aria2.conf "${1}"
+
+    - name: Create pacman-aria2 config file
+      blockinfile: 
+        path: /etc/pacman.d/pacman-aria2.conf
+        create: true
+        block: |
+          # error handling
+          timeout=5
+          connect-timeout=30
+          max-tries=3
+          retry-wait=10
+          max-file-not-found=1
+
+          # downloading
+          split=5
+          max-connection-per-server=5
+          min-split-size=1M
+          max-concurrent-downloads=1
+          file-allocation=none
+          remote-time=true
+          conditional-get=true
+          no-netrc=true
+
+          # resuming
+          continue=true
+          allow-overwrite=true
+          always-resume=false
+
+          # console
+          quiet=true
+          console-log-level=warn
+          summary-interval=0
+
+          # logging
+          log-level=error
 
     - name: Configure makepkg
       lineinfile:
@@ -75,6 +120,7 @@
     - name: Update system
       pacman:
         update_cache: yes
+        update_cache_extra_args: -y
         upgrade: yes
     
     - name: Install packages
@@ -85,6 +131,7 @@
           - git
           - man-db
           - man-pages
+          - pacman-contrib
           - pkgfile
           - reflector
           - rsync
@@ -175,13 +222,78 @@
         line: AutoEnable=true
   when: audio
 
+- name: Home directory setup
+  block:
+    - name: Create workspace directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ ansible_env.HOME }}/.cache"
+        - "{{ ansible_env.HOME }}/.config"
+        - "{{ ansible_env.HOME }}/.local"
+        - "{{ ansible_env.HOME }}/downloads"
+        - "{{ ansible_env.HOME }}/fieldwork"
+        - "{{ ansible_env.HOME }}/repos"
+
+    - name: Clone archsible repository
+      git:
+        repo: https://github.com/baj0k/archsible.git
+        dest: "{{ ansible_env.HOME }}/repos/archsible"
+
+    - name: Symlink user scripts
+      file:
+        src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/bin"
+        path: "{{ ansible_env.HOME }}/.local/bin"
+        state: link
+
 - name: Systemd configuration
   become: yes
   block:
+    - name: Link pacman-aria2dl script, service and timer
+      file:
+        src: "{{ ansible_env.HOME }}/.local/bin/pacman-aria2dl"
+        path: "/usr/local/bin/pacman-aria2dl"
+        state: link
+
+    - name: Create pacman-aria2dl systemd service
+      blockinfile: 
+        path: /etc/systemd/system/pacman-aria2dl.service
+        create: true
+        block: |
+          [Unit]
+          Description=Downloads tarballs of updated versions of packages
+          Wants=pacman-aria2dl.timer
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/local/bin/pacman-aria2dl
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Create pacman-aria2dl systemd timer
+      blockinfile: 
+        path: /etc/systemd/system/pacman-aria2dl.timer
+        create: true
+        block: |
+          [Unit]
+          Description=Downloads tarballs of updated versions of packages
+          Requires=pacman-aria2dl.service
+
+          [Timer]
+          Unit=pacman-aria2dl.service
+          OnCalendar=*:0/2
+
+          [Install]
+          WantedBy=timers.target
+        
     - name: Enable service timer units
       systemd:
+        daemon_reload: yes
         name: "{{ item }}"
         enabled: yes
       loop:
         - reflector.timer
         - pkgfile-update.timer
+        - pacman-aria2dl.timer
