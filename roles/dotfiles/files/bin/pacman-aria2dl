@@ -1,0 +1,9 @@
+#!/bin/sh
+TMPFILE=$(mktemp)
+trap '/usr/bin/rm -f "$TMPFILE"' EXIT
+
+packages=$(/usr/bin/checkupdates | /usr/bin/cut -d' ' -f1); [ -z "${packages}" ] && exit 0
+queue=$(/usr/bin/pacman -Sp ${packages} | /usr/bin/grep -v "file:///"); [ -z "${queue}" ] && exit 0 
+
+printf '%s\n' "${queue}" > "${TMPFILE}"
+/usr/bin/aria2c --input-file="${TMPFILE}" --no-conf --dir=/var/cache/pacman/pkg --max-concurrent-downloads=10 --continue=true --quiet=true --allow-overwrite=true
