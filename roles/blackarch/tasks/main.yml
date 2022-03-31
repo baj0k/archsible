@@ -15,12 +15,32 @@
       - burpsuite
       - gnu-netcat
       - gobuster
-      - jre-openjdk
+      - hydra
+      - john
+      - jre11-openjdk
+      - mariadb-clients
       - metasploit
       - msf-mpc
+      - nikto
       - nmap
+      - nuclei
       - openvpn
+      - postgresql
       - rlwrap
       - seclists
+      - smbclient
+      - sqlmap
+      - tcpdump
+      - wpscan
     state: present
 
+- name: Download firefox extensions
+  become: yes
+  get_url:
+    url: "https://addons.mozilla.org/firefox/downloads/latest/{{ item.name }}/latest.xpi"
+    dest: "/usr/lib/firefox/browser/extensions/{{ item.id }}.xpi"
+  loop_control:
+    index_var: loop_index
+  loop:
+    - { name: foxyproxy-standard, id: foxyproxy@eric.h.jung }
+    - { name: wappalyzer, id: wappalyzer@crunchlabz.com }

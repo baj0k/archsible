@@ -3,7 +3,6 @@
   tags: install
   hosts: vms
   remote_user: root
-
   pre_tasks:
     - name: End the play if host is not booted from Arch Linux ISO
       meta: end_host

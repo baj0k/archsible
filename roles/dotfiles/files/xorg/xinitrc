@@ -1,24 +1,31 @@
 #!/bin/sh
 
 # Source Xresources
-xrdb -merge $XDG_CONFIG_HOME/xorg/Xresources &
+xrdb -merge "$XDG_CONFIG_HOME/xorg/Xresources" &
+
+# Remap keyboard, enable compositor and set dpms parameters 
+remap &
+xcompmgr &
+xset s off -dpms &
 
 # Autostart 
-autorandr --change &
-crond -f "$XDG_CONFIG_HOME/crontab" &
-redshift -P -O 4200 &
-remap &
-xset s off -dpms &
-xcompmgr &
+[ -f /usr/bin/firefox ] && firefox &
 
-birdtray &
-blueman-applet &
-dunst &
-firefox &
-mpd &
+# Display configuration
+[ -f /usr/bin/autorandr ] && autorandr --default &
+[ -f /usr/bin/redshift ] && redshift -P -O 4200 &
 
-caprine --minimize &
-discord --start-minimized &
-signal-desktop --start-in-tray &
+# Daemons
+[ -f /usr/bin/crond ] && crond -f "$XDG_CONFIG_HOME/crontab" &
+[ -f /usr/bin/dunst ] && dunst &
+[ -f /usr/bin/mpd ] && mpd &
+[ -f /usr/bin/spice-vdagent ] && spice-vdagent &
 
+# Tray
+[ -f /usr/bin/caprine ] && caprine --minimize &
+[ -f /usr/bin/discord ] && discord --start-minimized &
+[ -f /usr/bin/signal-desktop ] && signal-desktop --start-in-tray &
+[ -f /usr/bin/blueman-applet ] && blueman-applet &
+
+# Start WM
 exec i3 

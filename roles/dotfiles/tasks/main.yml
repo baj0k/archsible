@@ -22,7 +22,6 @@
       loop:
         - { src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/user-dirs.dirs", path: "{{ ansible_env.HOME }}/.config/user-dirs.dirs" }
         - { src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/locale.conf", path: "{{ ansible_env.HOME }}/.config/locale.conf" }
-        - { src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/bin", path: "{{ ansible_env.HOME }}/.local/bin" }
 
 - name: AUR helper configuration
   block:
@@ -98,6 +97,56 @@
         name: 
           - firefox
         state: present
+
+    - name: Firefox - Create profiles.ini
+      blockinfile:
+        create: yes
+        path: "{{ ansible_env.HOME }}/.mozilla/firefox/profiles.ini"
+        block: |
+          [Install4F96D1932A9F858E]
+          Default={{ user_username }}
+          Locked=1
+
+          [Profile0]
+          Name={{ user_username }}
+          IsRelative=0
+          Path={{ user_username }}
+          Default=1
+
+          [General]
+          StartWithLastProfile=1
+          Version=2
+
+    - name: Firefox - Create install.ini
+      blockinfile:
+        create: yes
+        path: "{{ ansible_env.HOME }}/.mozilla/firefox/installs.ini"
+        block: |
+          [4F96D1932A9F858E]
+          Default={{ user_username }}
+          Locked=1
+
+    - name: Firefox - Create default profile
+      command: firefox -headless -no-remote -CreateProfile "{{ user_username }} {{ ansible_env.HOME }}/.mozilla/firefox/{{ user_username }}"
+
+    - name: Firefox - Create extension directory
+      become: yes
+      file:
+        path: "/usr/lib/firefox/browser/extensions"
+        state: directory
+
+    - name: Firefox - Download extensions
+      become: yes
+      get_url:
+        url: "https://addons.mozilla.org/firefox/downloads/latest/{{ item.name }}/latest.xpi"
+        dest: "/usr/lib/firefox/browser/extensions/{{ item.id }}.xpi"
+      loop_control:
+        index_var: loop_index
+      loop:
+        - { name: multi-account-containers, id: "@testpilot-containers" }
+        - { name: i-dont-care-about-cookies, id: jid1-KKzOGWgsW3Ao4Q@jetpack }
+        - { name: privacy-badger17, id: jid1-MnnxcxisBPnSXQ@jetpack }
+        - { name: passff, id: passff@invicem.pro }
   when: firefox
 
 - name: Git configuration
@@ -472,6 +521,7 @@
         - tags
         - urls
 
+          # TODO: move to systemd timers
     - name: Newsboat - Add crontab tasks
       lineinfile:
         path: "{{ ansible_env.HOME }}/.config/crontab" 
