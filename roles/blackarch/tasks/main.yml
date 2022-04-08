@@ -15,6 +15,7 @@
       - burpsuite
       - gnu-netcat
       - gobuster
+      - hexedit
       - hydra
       - john
       - jre11-openjdk
