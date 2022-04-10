@@ -30,7 +30,7 @@ autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
 	set viminfo="NONE"
 	syntax on
 
-" Spaces & Tabs
+" Whitespace options
     set tabstop=4      
     set softtabstop=4 
     set shiftwidth=4 
@@ -47,6 +47,10 @@ autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
 	map <C-j> <C-w>j
 	map <C-k> <C-w>k
 	map <C-l> <C-w>l
+
+" Tab management
+    map <Tab> gt
+    map <S-Tab> gT
 
 "" Custom shortcuts:
 " Clear search highlight
