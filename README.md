@@ -25,8 +25,9 @@ Each playbook consists of two plays - installation of the base Arch Linux OS and
 Run the chosen playbook with:
 $ ansible-playbook -i hosts.cfg --ask-pass playbook.yml
 
-## Important information: (Below cases should be considered workarounds and fixed as soon as possible)
-- The LUKS1 format is used because grub doesn't yet fully support LUKS2 format. This should be changed as soon as the code is patched.
+## Important information 
+Below cases should be considered workarounds and changed as soon as possible.
+- The LUKS1 format is used because grub doesn't yet fully support LUKS2. This requires upstream code to be patched.
 - Any installation tasks that are done in chroot are using a command ansible module. This is due to the current lack of possibility to execute ansible playbooks in the remote chroot.
 - In the dotfiles playbook there are task for installing the libxft-bgra package which is a patched version of libxft. Currently libxft has some troubles displaying some unicode glyphs.
 
