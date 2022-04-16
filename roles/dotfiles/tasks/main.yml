@@ -1,16 +1,10 @@
 # TODO: add acpi if needed and check if acpi is needed on desktop or laptop only?
 # TODO: add symlinks for user.js chrome.css in firefox tasks
+# TODO: get rid of the tags file somehow (newsboat)
+# TODO: update configuration files, use: ranger --copy-config all
 ---
 - name: Docker configuration
   block:
-    - name: Docker - Install packages
-      become: yes
-      pacman:
-        name: 
-          - docker
-          - docker-compose
-        state: present
-
     - name: Docker - Add user to docker group
       become: yes
       user:
@@ -19,26 +13,8 @@
         append: yes
   when: docker
 
-- name: Dunst configuration
-  block:
-    - name: Dunst - Install packages
-      become: yes
-      pacman:
-        name: 
-          - dunst
-          - libnotify
-        state: present
-  when: dunst
-
 - name: Firefox configuration
   block:
-    - name: Firefox - Install packages
-      become: yes
-      pacman:
-        name: 
-          - firefox
-        state: present
-
     - name: Firefox - Create profiles.ini
       blockinfile:
         create: yes
@@ -94,17 +70,6 @@
   block:
     - name: Display server configuration
       block:
-        - name: Xorg - Install packages
-          become: yes
-          pacman:
-            name: 
-              - xorg
-              - xorg-xinit
-              - xwallpaper
-              - xclip
-              - xcompmgr
-            state: present
-              
         # TODO: fix for amd and nvidia drivers (current setup works for intel)
         - name: Xorg - Install GPU drivers
           become: yes
@@ -116,19 +81,6 @@
               - vulkan-intel
               - xf86-video-fbdev
               - intel-media-driver
-            state: present
-
-        - name: Xorg - Install fonts
-          become: yes
-          pacman:
-            name: 
-              - noto-fonts
-              - ttf-joypixels
-              - ttf-font-awesome
-              - ttf-dejavu
-              - ttf-inconsolata
-              - ttf-liberation
-              - adobe-source-han-sans-otc-fonts
             state: present
 
         - name: Xorg - Allow language specific characters in terminal
@@ -211,17 +163,6 @@
           loop_control:
             extended: yes
           when: resolutions | length > 1 and ansible_loop.index0 != 0
-
-    - name: Window manager configuration
-      block:
-        - name: i3 - Install packages
-          become: yes
-          pacman:
-            name:
-              - i3-gaps
-              - i3blocks
-              - sxiv
-            state: present
   when: i3
 
 - name: Libvirt configuration
@@ -298,57 +239,8 @@
         - { name: iso, path: iso }
   when: libvirt
 
-- name: Mpd configuration
-  block:
-    - name: Mpd - Install packages
-      become: yes
-      pacman:
-        name: 
-          - mpd
-        state: present
-  when: mpd
-
-- name: Mpv configuration
-  block:
-    - name: Mpv - Install packages
-      become: yes
-      pacman:
-        name: 
-          - mpv
-          - yt-dlp
-        state: present
-  when: mpv
-
-- name: Ncmpcpp configuration
-  block:
-    - name: Ncmpcpp - Install packages
-      become: yes
-      pacman:
-        name: 
-          - ncmpcpp
-        state: present
-  when: ncmpcpp
-
-- name: Neofetch configuration
-  block:
-    - name: Neofetch - Install packages
-      become: yes
-      pacman:
-        name: 
-          - neofetch
-        state: present
-  when: neofetch
-
-# TODO: get rid of the tags file somehow
 - name: Newsboat configuration
   block:
-    - name: Newsboat - Install packages
-      become: yes
-      pacman:
-        name: 
-          - newsboat
-        state: present
-
 # TODO: move to systemd timers
     - name: Newsboat - Add crontab tasks
       lineinfile:
@@ -356,29 +248,6 @@
         line: "*/10 * * * * /usr/bin/newsboat -x reload"
         create: true
   when: newsboat
-
-- name: Neovim configuration
-  block:
-    - name: Neovim - Install packages
-      become: yes
-      pacman:
-        name: 
-          - neovim
-          - shellcheck
-        state: present
-  when: neovim
-
-- name: Ranger configuration
-  block:
-    # TODO: update configuration files, use: ranger --copy-config all
-    - name: Ranger - Install packages
-      become: yes
-      pacman:
-        name: 
-          - ranger
-          - ueberzug
-        state: present
-  when: ranger
 
 - name: Suckless tools configuration
   block:
@@ -433,53 +302,10 @@
       command:
         cmd: makepkg -sric --noconfirm
         chdir: "/tmp/libxft-bgra"
-      
-    - name: Scron - Clone repository
-      git:
-        repo: https://aur.archlinux.org/scron-git.git
-        dest: /tmp/scron
-
-    - name: Scron - Build package
-      command:
-        cmd: makepkg -sric --noconfirm
-        chdir: /tmp/scron
   when: suckless
-
-- name: Tmux configuration
-  block:
-    - name: Tmux - Install packages
-      become: yes
-      pacman:
-        name: 
-          - tmux
-        state: present
-  when: tmux
-
-- name: Zathura configuration
-  block:
-    - name: Zathura - Install packages
-      become: yes
-      pacman:
-        name: 
-          - pdfgrep
-          - zathura
-          - zathura-pdf-mupdf
-        state: present
-  when: zathura
 
 - name: Zsh configuration
   block:
-    - name: Zsh - Install packages
-      become: yes
-      pacman:
-        name:
-          - bat
-          - checkbashisms
-          - zsh
-          - zsh-completions
-          - zsh-syntax-highlighting
-        state: present
-
     - name: Zsh - Change default shell
       become: yes
       user:
@@ -493,6 +319,16 @@
         state: present
         create: yes
         line: 'export ZDOTDIR="$HOME/.config/zsh"'
+
+    - name: Zsh - Remove leftover bash configuration files
+      file:
+        path: "{{ ansible_env.HOME }}/{{ item }}"
+        state: absent
+      loop:
+        - .bash_history
+        - .bash_logout
+        - .bash_profile
+        - .bashrc
 
     - name: Zsh - Create files for XDG workarounds
       file:

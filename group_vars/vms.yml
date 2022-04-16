@@ -1,6 +1,6 @@
 ---
 # Machine specific software
-software:
+machine_specific_software:
   - spice-vdagent
   - xf86-video-qxl
 

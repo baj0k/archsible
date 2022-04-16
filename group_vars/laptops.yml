@@ -1,4 +1,4 @@
 ---
 # Machine specific software
-software:
+machine_specific_software:
   - autorandr

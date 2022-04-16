@@ -6,7 +6,7 @@
     
 - name: Setup blackarch repository
   become: yes
-  command: "sh /tmp/strap.sh"
+  command: "/bin/sh /tmp/strap.sh"
 
 - name: Install blackarch packages
   become: yes

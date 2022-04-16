@@ -118,28 +118,67 @@
         update_cache: yes
         upgrade: yes
     
+    - name: Include conditional software packages
+      set_fact:
+        "{{ item.varname }}": "{{ item.packages }}"
+      loop:
+        - { varname: audio_packages, packages: [pipewire, lib32-pipewire, wireplumber, pipewire-alsa, pipewire-pulse, pipewire-jack, lib32-pipewire-jack], condition: "{{ audio }}" }
+        - { varname: bluetooth_packages, packages: [bluez, bluez-utils, blueman, bluez-hid2hci], condition: "{{ bluetooth }}" }
+        - { varname: dunst_packages, packages: [dunst, libnotify], condition: "{{ dunst }}" }
+        - { varname: docker_packages, packages: [docker, docker-compose], condition: "{{ docker }}" }
+        - { varname: firefox_packages, packages: [firefox], condition: "{{ firefox }}" }
+        - { varname: font_packages, packages: [noto-fonts, ttf-joypixels, ttf-font-awesome, ttf-dejavu, ttf-inconsolata, ttf-liberation, adobe-source-han-sans-otc-fonts], condition: "{{ i3 }}" }
+        - { varname: i3_packages, packages: [i3-gaps, i3blocks, sxiv], condition: "{{ i3 }}" }
+        - { varname: mpd_packages, packages: [mpd], condition: "{{ mpd }}" }
+        - { varname: mpv_packages, packages: [mpv, yt-dlp], condition: "{{ mpv }}" }
+        - { varname: ncmpcpp_packages, packages: [ncmpcpp], condition: "{{ ncmpcpp }}" }
+        - { varname: neofetch_packages, packages: [neofetch], condition: "{{ neofetch }}" }
+        - { varname: newsboat_packages, packages: [newsboat], condition: "{{ newsboat }}" }
+        - { varname: neovim_packages, packages: [neovim, shellcheck], condition: "{{ neovim }}" }
+        - { varname: ranger_packages, packages: [ranger, ueberzug], condition: "{{ ranger }}" }
+        - { varname: tmux_packages, packages: [tmux], condition: "{{ tmux }}" }
+        - { varname: xorg_packages, packages: [xorg, xorg-xinit, xwallpaper, xclip, xcompmgr], condition: "{{ i3 }}" }
+        - { varname: zathura_packages, packages: [pdfgrep, zathura, zathura-pdf-mupdf], condition: "{{ zathura }}" }
+        - { varname: zsh_packages, packages: [bat, checkbashisms, zsh, zsh-completions, zsh-syntax-highlighting], condition: "{{ zsh }}" }
+      when: item.condition
+    
     - name: Install packages
       pacman:
-        name:
-          - base-devel
-          - dash
-          - git
-          - man-db
-          - man-pages
-          - p7zip
-          - pacman-contrib
-          - pkgfile
-          - python-pip
-          - reflector
-          - rsync
-          - wget
+        name: "{{ item }}"
         state: present
-
-      # TODO: include conditional software
-    - name: Install machine specific packages
-      pacman:
-        name: "{{ software }}"
-        state: present
+      loop: 
+        - base-devel
+        - dash
+        - git
+        - man-db
+        - man-pages
+        - p7zip
+        - pacman-contrib
+        - pkgfile
+        - python-pip
+        - reflector
+        - rsync
+        - wget
+        - "{{ machine_specific_software }}"
+        # Conditional software
+        - "{{ audio_packages | default([]) }}" 
+        - "{{ bluetooth_packages | default([]) }}" 
+        - "{{ docker_packages | default([]) }}" 
+        - "{{ dunst_packages | default([]) }}" 
+        - "{{ firefox_packages | default([]) }}" 
+        - "{{ font_packages | default([]) }}" 
+        - "{{ i3_packages | default([]) }}" 
+        - "{{ mpd_packages | default([]) }}" 
+        - "{{ mpv_packages | default([]) }}" 
+        - "{{ ncmpcpp_packages | default([]) }}" 
+        - "{{ neofetch_packages | default([]) }}" 
+        - "{{ newsboat_packages | default([]) }}" 
+        - "{{ neovim_packages | default([]) }}" 
+        - "{{ ranger_packages | default([]) }}" 
+        - "{{ tmux_packages | default([]) }}" 
+        - "{{ xorg_packages | default([]) }}" 
+        - "{{ zathura_packages | default([]) }}" 
+        - "{{ zsh_packages | default([]) }}" 
 
     - name: Synchronize pkgfile database
       systemd:
@@ -251,34 +290,9 @@
         - pkgfile-update.timer
         - pacman-aria2dl.timer
 
-- name: Audio configuration
-  become: yes
-  block:
-    - name: Install audio related packages
-      pacman:
-        name: 
-          - pipewire
-          - lib32-pipewire
-          - wireplumber
-          - pipewire-alsa
-          - pipewire-pulse
-          - pipewire-jack
-          - lib32-pipewire-jack
-        state: present
-  when: audio
-
 - name: Bluetooth configuration
   become: yes
   block:
-    - name: Install bluetooth related packages
-      pacman:
-        name: 
-          - bluez
-          - bluez-utils
-          - blueman
-          - bluez-hid2hci
-        state: present
-    
     - name: Enable btusb module
       modprobe:
         name: btusb
@@ -310,7 +324,7 @@
         chdir: "/tmp/{{ aur_helper }}"
   when: aur
 
-- name: Home workspace setup
+- name: User workspace setup
   block:
     - name: Create workspace directories
       file:
@@ -326,7 +340,6 @@
         - "{{ ansible_env.HOME }}/music"
         - "{{ ansible_env.HOME }}/pictures"
         - "{{ ansible_env.HOME }}/repos"
-        - "{{ ansible_env.HOME }}/tmp"
         - "{{ ansible_env.HOME }}/videos"
 
     - name: Clone dotfiles repository
@@ -334,16 +347,11 @@
         repo: https://github.com/baj0k/dotfiles.git
         dest: /tmp/dotfiles
         separate_git_dir: "{{ ansible_env.HOME }}/.local/dotfiles"
+      ignore_errors: yes
 
     - name: Deploy dotfiles
       command: /bin/sh /tmp/dotfiles/setup.sh
-        #shell: "curl -L https://raw.githubusercontent.com/baj0k/dotfiles/main/setup.sh | sh"
-
-        #    - name: Deploy dotfiles
-        #      copy:
-        #        src: /tmp/dotfiles/
-        #        dest: "{{ ansible_env.HOME }}"
-        #        remote_src: yes 
+      ignore_errors: yes
 
 - name: Migrate data from ansible controller
   copy:
