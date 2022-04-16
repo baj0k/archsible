@@ -1,52 +1,6 @@
 # TODO: add acpi if needed and check if acpi is needed on desktop or laptop only?
 # TODO: add symlinks for user.js chrome.css in firefox tasks
 ---
-- name: Further home directory setup
-  block:
-    - name: Create workspace directories
-      file:
-        path: "{{ item }}"
-        state: directory
-      loop:
-        - "{{ ansible_env.HOME }}/ctf"
-        - "{{ ansible_env.HOME }}/music"
-        - "{{ ansible_env.HOME }}/pictures"
-        - "{{ ansible_env.HOME }}/tmp"
-        - "{{ ansible_env.HOME }}/videos"
-
-    - name: Symlink files and directories
-      file:
-        src: "{{ item.src }}"
-        path: "{{ item.path }}"
-        state: link
-      loop:
-        - { src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/user-dirs.dirs", path: "{{ ansible_env.HOME }}/.config/user-dirs.dirs" }
-        - { src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/locale.conf", path: "{{ ansible_env.HOME }}/.config/locale.conf" }
-
-- name: AUR helper configuration
-  block:
-    - name: AUR - Clone AUR helper PKGBUILD
-      git:
-        repo: "https://aur.archlinux.org/{{ aur_helper }}.git"
-        dest: "/tmp/{{ aur_helper }}"
-
-    - name: AUR - Build package
-      command:
-        cmd: makepkg -sric --noconfirm
-        chdir: "/tmp/{{ aur_helper }}"
-
-    - name: AUR - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/{{ aur_helper }}"
-        state: directory
-
-    - name: AUR - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/{{ aur_helper }}/config.json"
-        path: "{{ ansible_env.HOME }}/.config/{{ aur_helper }}/config.json"
-        state: link
-  when: aur
-
 - name: Docker configuration
   block:
     - name: Docker - Install packages
@@ -74,19 +28,6 @@
           - dunst
           - libnotify
         state: present
-
-    - name: Dunst - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/dunst"
-        state: directory
-
-    - name: Dunst - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/dunst/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/dunst/{{ item }}"
-        state: link
-      loop:
-        - dunstrc
   when: dunst
 
 - name: Firefox configuration
@@ -149,22 +90,6 @@
         - { name: passff, id: passff@invicem.pro }
   when: firefox
 
-- name: Git configuration
-  block:
-    - name: Git - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/git"
-        state: directory
-
-    - name: Git - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/git/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/git/{{ item }}"
-        state: link
-      loop:
-        - config
-  when: git
-
 - name: GUI setup
   block:
     - name: Display server configuration
@@ -205,20 +130,6 @@
               - ttf-liberation
               - adobe-source-han-sans-otc-fonts
             state: present
-
-        - name: Xorg - Create directories
-          file:
-            path: "{{ ansible_env.HOME }}/.config/xorg"
-            state: directory
-
-        - name: Xorg - Symlink configuration
-          file:
-            src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/xorg/{{ item }}"
-            path: "{{ ansible_env.HOME }}/.config/xorg/{{ item }}"
-            state: link
-          loop:
-            - Xresources
-            - xinitrc
 
         - name: Xorg - Allow language specific characters in terminal
           become: yes
@@ -311,20 +222,6 @@
               - i3blocks
               - sxiv
             state: present
-
-        - name: i3 - Create directories
-          file:
-            path: "{{ ansible_env.HOME }}/.config/i3"
-            state: directory
-
-        - name: i3 - Symlink configuration
-          file:
-            src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/i3/{{ item }}"
-            path: "{{ ansible_env.HOME }}/.config/i3/{{ item }}"
-            state: link
-          loop:
-            - config
-            - i3blocks
   when: i3
 
 - name: Libvirt configuration
@@ -409,19 +306,6 @@
         name: 
           - mpd
         state: present
-
-    - name: Mpd - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/mpd"
-        state: directory
-
-    - name: Mpd - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/mpd/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/mpd/{{ item }}"
-        state: link
-      loop:
-        - mpd.conf
   when: mpd
 
 - name: Mpv configuration
@@ -433,20 +317,6 @@
           - mpv
           - yt-dlp
         state: present
-
-    - name: Mpv - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/mpv"
-        state: directory
-
-    - name: Mpv - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/mpv/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/mpv/{{ item }}"
-        state: link
-      loop:
-        - input.conf
-        - mpv.conf
   when: mpv
 
 - name: Ncmpcpp configuration
@@ -457,20 +327,6 @@
         name: 
           - ncmpcpp
         state: present
-
-    - name: Ncmpcpp - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/ncmpcpp"
-        state: directory
-
-    - name: Ncmpcpp - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/ncmpcpp/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/ncmpcpp/{{ item }}"
-        state: link
-      loop:
-        - bindings
-        - config
   when: ncmpcpp
 
 - name: Neofetch configuration
@@ -481,21 +337,9 @@
         name: 
           - neofetch
         state: present
-
-    - name: Neofetch - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/neofetch"
-        state: directory
-
-    - name: Neofetch - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/neofetch/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/neofetch/{{ item }}"
-        state: link
-      loop:
-        - config.conf
   when: neofetch
 
+# TODO: get rid of the tags file somehow
 - name: Newsboat configuration
   block:
     - name: Newsboat - Install packages
@@ -505,23 +349,7 @@
           - newsboat
         state: present
 
-    - name: Newsboat - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/newsboat"
-        state: directory
-
-    - name: Newsboat - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/newsboat/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/newsboat/{{ item }}"
-        state: link
-      loop:
-        - config
-          # TODO: get rid of the tags file somehow
-        - tags
-        - urls
-
-          # TODO: move to systemd timers
+# TODO: move to systemd timers
     - name: Newsboat - Add crontab tasks
       lineinfile:
         path: "{{ ansible_env.HOME }}/.config/crontab" 
@@ -538,19 +366,6 @@
           - neovim
           - shellcheck
         state: present
-
-    - name: Neovim - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/nvim"
-        state: directory
-
-    - name: Neovim - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/nvim/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/nvim/{{ item }}"
-        state: link
-      loop:
-        - init.vim
   when: neovim
 
 - name: Ranger configuration
@@ -563,30 +378,13 @@
           - ranger
           - ueberzug
         state: present
-
-    - name: Ranger - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/ranger"
-        state: directory
-
-    - name: Ranger - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/ranger/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/ranger/{{ item }}"
-        state: link
-      loop:
-        - commands.py
-        - commands_full.py
-        - rc.conf
-        - rifle.conf
-        - scope.sh
   when: ranger
 
 - name: Suckless tools configuration
   block:
     - name: Suckless-builds - Clone repository
       git:
-        repo: https://github.com/baj0k/SB.git
+        repo: https://github.com/baj0k/suckless-builds.git
         dest: "{{ ansible_env.HOME }}/repos/suckless-builds"
 
     - name: Suckless-builds - Install dmenu
@@ -655,19 +453,6 @@
         name: 
           - tmux
         state: present
-
-    - name: Tmux - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/tmux"
-        state: directory
-
-    - name: Tmux - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/tmux/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/tmux/{{ item }}"
-        state: link
-      loop:
-        - tmux.conf
   when: tmux
 
 - name: Zathura configuration
@@ -680,19 +465,6 @@
           - zathura
           - zathura-pdf-mupdf
         state: present
-
-    - name: Zathura - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/zathura"
-        state: directory
-
-    - name: Zathura - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/zathura/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/zathura/{{ item }}"
-        state: link
-      loop:
-        - zathurarc
   when: zathura
 
 - name: Zsh configuration
@@ -722,23 +494,6 @@
         create: yes
         line: 'export ZDOTDIR="$HOME/.config/zsh"'
 
-    - name: Zsh - Create directories
-      file:
-        path: "{{ ansible_env.HOME }}/.config/zsh"
-        state: directory
-
-    - name: Zsh - Symlink configuration
-      file:
-        src:  "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/zsh/{{ item }}"
-        path: "{{ ansible_env.HOME }}/.config/zsh/{{ item }}"
-        state: link
-      loop:
-        - aliasrc
-        - .zkbd
-        - .zprofile
-        - .zshenv
-        - .zshrc
-
     - name: Zsh - Create files for XDG workarounds
       file:
         path: "{{ ansible_env.HOME }}/{{ item.path }}"
@@ -748,21 +503,3 @@
         - { state: touch, path: .config/wget/wgetrc }
         - { state: directory, path: .local/share/zsh }
   when: zsh
-
-- name: Migrate data from ansible controller
-  copy:
-    src: "{{ item }}"
-    dest: "{{ item }}"
-  loop:
-      # $HOME
-    - ~/ctf/
-    - ~/downloads/
-    - ~/fieldwork/
-    - ~/music/
-    - ~/pictures/
-    - ~/repos/
-    - ~/tmp/
-    - ~/videos/
-      # $HOME/.config
-    - ~/.config/git/identity
-  when: migrate

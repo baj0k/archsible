@@ -3,16 +3,6 @@
   tags: install
   hosts: laptops
   remote_user: root
-  vars:
-    # Overwrite disk with random data before installation
-    shred: false
-
-    # Configure full disk encryption
-    encrypt_disk: true
-
-    # Prepare system for dual-booting with windows 
-    dual_boot: false
-
   pre_tasks:
     - name: End the play if host is not booted from Arch Linux ISO
       meta: end_host
@@ -42,10 +32,6 @@
   hosts: laptops
   remote_user: test
   gather_facts: no
-  vars:
-    # Copy user data from the ansible controller
-    migrate: false
-
   pre_tasks:
     - name: Wait one minute for connection
       tags: install

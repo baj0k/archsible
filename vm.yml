@@ -32,10 +32,6 @@
   hosts: vms
   remote_user: test
   gather_facts: no
-  vars:
-    # Copy user data from the ansible controller
-    migrate: false
-
   pre_tasks:
     - name: Wait one minute for connection
       tags: install
@@ -53,8 +49,8 @@
   roles:
     - post-install
     - dotfiles
-    - hardening
-    - blackarch
+      #- hardening
+      #- blackarch
 
   post_tasks:
     - name: Reboot after installation is complete

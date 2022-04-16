@@ -19,3 +19,39 @@ user_password: test
 
 # Self explanatory
 aur_helper: yay
+
+# Overwrite disk with random data before installation
+shred: false
+
+# Configure full disk encryption
+encrypt_disk: false
+
+# Prepare system for dual-booting with windows 
+dual_boot: false
+
+# Migrate user data from ansible controller
+migrate: false
+
+# Configure audio & bluetooth
+audio: false
+bluetooth: false
+
+# Include software specific tasks
+aur: true
+docker: true
+dunst: true
+firefox: true
+git: true
+i3: true
+libvirt: false
+mpd: false
+mpv: false
+ncmpcpp: false
+neofetch: true
+newsboat: false
+neovim: true
+ranger: true
+suckless: true
+tmux: true
+zathura: true
+zsh: true

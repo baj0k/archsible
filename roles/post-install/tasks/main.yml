@@ -135,6 +135,7 @@
           - wget
         state: present
 
+      # TODO: include conditional software
     - name: Install machine specific packages
       pacman:
         name: "{{ software }}"
@@ -182,81 +183,30 @@
           Exec = /usr/bin/ln -sfT dash /usr/bin/sh
           Depends = dash
 
-- name: Audio configuration
-  become: yes
-  block:
-    - name: Install audio related packages
-      pacman:
-        name: 
-          - pipewire
-          - lib32-pipewire
-          - wireplumber
-          - pipewire-alsa
-          - pipewire-pulse
-          - pipewire-jack
-          - lib32-pipewire-jack
-        state: present
-
-    - name: Install bluetooth related packages
-      pacman:
-        name: 
-          - bluez
-          - bluez-utils
-          - blueman
-          - bluez-hid2hci
-        state: present
-    
-    - name: Enable btusb module
-      modprobe:
-        name: btusb
-        state: present
-    
-    - name: Enable bluetooth daemon
-      systemd:
-        name: bluetooth
-        state: started
-        enabled: yes
-
-    - name: Auto power-on bluetooth on boot
-      lineinfile:
-        path: /etc/locale.conf
-        regexp: AutoEnable=
-        line: AutoEnable=true
-  when: audio
-
-- name: Home directory setup
-  block:
-    - name: Create workspace directories
-      file:
-        path: "{{ item }}"
-        state: directory
-      loop:
-        - "{{ ansible_env.HOME }}/.cache"
-        - "{{ ansible_env.HOME }}/.config"
-        - "{{ ansible_env.HOME }}/.local"
-        - "{{ ansible_env.HOME }}/downloads"
-        - "{{ ansible_env.HOME }}/fieldwork"
-        - "{{ ansible_env.HOME }}/repos"
-
-    - name: Clone archsible repository
-      git:
-        repo: https://github.com/baj0k/archsible.git
-        dest: "{{ ansible_env.HOME }}/repos/archsible"
-
-    - name: Symlink user scripts
-      file:
-        src: "{{ ansible_env.HOME }}/repos/archsible/roles/dotfiles/files/bin"
-        path: "{{ ansible_env.HOME }}/.local/bin"
-        state: link
-
 - name: Systemd configuration
   become: yes
   block:
-    - name: Link pacman-aria2dl script, service and timer
-      file:
-        src: "{{ ansible_env.HOME }}/.local/bin/pacman-aria2dl"
+    #    - name: Link pacman-aria2dl script, service and timer
+    #      file:
+    #        src: "{{ ansible_env.HOME }}/.local/bin/pacman-aria2dl"
+    #        path: "/usr/local/bin/pacman-aria2dl"
+    #        state: link
+
+    - name: Create Xfer pacman-aria2dl script
+      blockinfile: 
         path: "/usr/local/bin/pacman-aria2dl"
-        state: link
+        create: true
+        block: |
+          #!/bin/sh
+          TMPFILE=$(mktemp)
+          trap '/usr/bin/rm -f "$TMPFILE"' EXIT
+          
+          packages=$(/usr/bin/checkupdates | /usr/bin/cut -d' ' -f1); [ -z "${packages}" ] && exit 0
+          queue=$(/usr/bin/pacman -Sp ${packages} | /usr/bin/grep -v "file:///"); [ -z "${queue}" ] && exit 0
+          
+          printf '%s\n' "${queue}" > "${TMPFILE}"
+          /usr/bin/aria2c --input-file="${TMPFILE}" --no-conf --dir=/var/cache/pacman/pkg --max-concurrent-downloads=10 --continue=true --quiet=true --allow-overwrite=true
+
 
     - name: Create pacman-aria2dl systemd service
       blockinfile: 
@@ -300,3 +250,115 @@
         - reflector.timer
         - pkgfile-update.timer
         - pacman-aria2dl.timer
+
+- name: Audio configuration
+  become: yes
+  block:
+    - name: Install audio related packages
+      pacman:
+        name: 
+          - pipewire
+          - lib32-pipewire
+          - wireplumber
+          - pipewire-alsa
+          - pipewire-pulse
+          - pipewire-jack
+          - lib32-pipewire-jack
+        state: present
+  when: audio
+
+- name: Bluetooth configuration
+  become: yes
+  block:
+    - name: Install bluetooth related packages
+      pacman:
+        name: 
+          - bluez
+          - bluez-utils
+          - blueman
+          - bluez-hid2hci
+        state: present
+    
+    - name: Enable btusb module
+      modprobe:
+        name: btusb
+        state: present
+    
+    - name: Enable bluetooth daemon
+      systemd:
+        name: bluetooth
+        state: started
+        enabled: yes
+
+    - name: Auto power-on bluetooth on boot
+      lineinfile:
+        path: /etc/locale.conf
+        regexp: AutoEnable=
+        line: AutoEnable=true
+  when: audio or bluetooth
+
+- name: AUR configuration
+  block:
+    - name: Clone AUR helper PKGBUILD
+      git:
+        repo: "https://aur.archlinux.org/{{ aur_helper }}.git"
+        dest: "/tmp/{{ aur_helper }}"
+
+    - name: Build AUR helper package
+      command:
+        cmd: makepkg -sric --noconfirm
+        chdir: "/tmp/{{ aur_helper }}"
+  when: aur
+
+- name: Home workspace setup
+  block:
+    - name: Create workspace directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ ansible_env.HOME }}/.cache"
+        - "{{ ansible_env.HOME }}/.config"
+        - "{{ ansible_env.HOME }}/.local"
+        - "{{ ansible_env.HOME }}/ctf"
+        - "{{ ansible_env.HOME }}/downloads"
+        - "{{ ansible_env.HOME }}/fieldwork"
+        - "{{ ansible_env.HOME }}/music"
+        - "{{ ansible_env.HOME }}/pictures"
+        - "{{ ansible_env.HOME }}/repos"
+        - "{{ ansible_env.HOME }}/tmp"
+        - "{{ ansible_env.HOME }}/videos"
+
+    - name: Clone dotfiles repository
+      git:
+        repo: https://github.com/baj0k/dotfiles.git
+        dest: /tmp/dotfiles
+        separate_git_dir: "{{ ansible_env.HOME }}/.local/dotfiles"
+
+    - name: Deploy dotfiles
+      command: /bin/sh /tmp/dotfiles/setup.sh
+        #shell: "curl -L https://raw.githubusercontent.com/baj0k/dotfiles/main/setup.sh | sh"
+
+        #    - name: Deploy dotfiles
+        #      copy:
+        #        src: /tmp/dotfiles/
+        #        dest: "{{ ansible_env.HOME }}"
+        #        remote_src: yes 
+
+- name: Migrate data from ansible controller
+  copy:
+    src: "{{ item }}"
+    dest: "{{ item }}"
+  loop:
+    # $HOME
+    - ~/ctf/
+    - ~/downloads/
+    - ~/fieldwork/
+    - ~/music/
+    - ~/pictures/
+    - ~/repos/
+    - ~/tmp/
+    - ~/videos/
+    # $HOME/.config
+    - ~/.config/git/identity
+  when: migrate
