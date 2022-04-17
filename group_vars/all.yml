@@ -1,28 +1,16 @@
 ---
-# Disk on which the system should be installed.
-#install_drive: sdb
-
-# Partitions size
-root_size: 50G
-var_size: 10G
-varlog_size: 5G
-vartmp_size: 2G
-
+###############################
+## General settings
+###############################
 # Localization settings
 region: Europe
 country: PL
 city: Warsaw
 hostname: TEST
 
-# Passwords & user configuration
-luks_password: test
-root_password: test
-user_username: test
-user_password: test
-
-# Self explanatory
-aur_helper: yay
-
+###############################
+## Installation settings
+###############################
 # Overwrite disk with random data before installation
 shred: false
 
@@ -32,8 +20,29 @@ encrypt_disk: false
 # Prepare system for dual-booting with windows 
 dual_boot: false
 
+# Disk on which the system should be installed.
+#install_drive: sdb
+
+# Partitions size
+root_size: 50G
+var_size: 10G
+varlog_size: 5G
+vartmp_size: 2G
+
+# Passwords & user configuration
+luks_password: test
+root_password: test
+user_username: test
+user_password: test
+
+###############################
+## Post-installation settings
+###############################
 # Migrate user data from ansible controller
 migrate: false
+
+# Self explanatory
+aur_helper: yay
 
 # Configure audio & bluetooth
 audio: false

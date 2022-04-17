@@ -1,7 +1,7 @@
 ---
 - name: Installation play
   tags: install
-  hosts: laptops
+  hosts: all
   remote_user: root
   pre_tasks:
     - name: End the play if host is not booted from Arch Linux ISO
@@ -29,7 +29,7 @@
     - meta: end_host
 
 - name: Post-installation play
-  hosts: laptops
+  hosts: all
   remote_user: test
   gather_facts: no
   pre_tasks:
