@@ -2,27 +2,25 @@
 - name: Detect disks, erase data and set variables
   tags: test
   block:
-    - name: Initialize list variables
-      set_fact:
-        storage_devices: []
-        part_uuids: []
-        dm_uuids: []
-
     - name: Get storage devices on which the system can be installed
       set_fact:
-        storage_devices: "{{ storage_devices + [item.key] }}"
+        storage_devices: "{{ storage_devices | default([]) + [item.key] }}"
       with_dict: "{{ ansible_devices }}"
-# TODO: currently supports QEMU, test it with virtualbox, vmware etc
-      when: "item.value.host.startswith('SATA controller:') and item.value.vendor != 'QEMU' or
-             item.value.host.startswith('SCSI storage controller:') or
-             item.value.host.startswith('Non-Volatile memory controller:')"
-
-# TODO: change this so that if more than one is available than the user is prompted to set this in variables
-    - name: Select drive for the installtion or fail if more than one is available
+      when: install_drive is not defined and (
+            item.value.host.startswith('SATA controller:') and item.value.vendor != 'QEMU' or
+            item.value.host.startswith('SCSI storage controller:') or
+            item.value.host.startswith('Non-Volatile memory controller:') )
+            
+    - name: Fail if storage device for system wasn't specified and multiple are available
+      fail:
+        msg: Multiple storage deviced detected! Specify disk on which the system should be installed in group_vars/all.yml file.
+      when: (storage_devices is defined and storage_devices | length != 1) and install_drive is not defined
+        
+    - name: Use manually specified disk
       set_fact:
         install_drive: "{{ storage_devices[0] }}"
-      failed_when: storage_devices | length != 1
- 
+      when: install_drive is not defined
+
     - name: Overwrite disk with random data
       command: shred -v --random-source=/dev/urandom -n1 /dev/{{ install_drive }}
       when: shred
@@ -131,13 +129,13 @@
 
     - name: Get dm_uuids
       set_fact:
-        dm_uuids: "{{ item.value + dm_uuids }}"
+        dm_uuids: "{{ item.value + dm_uuids | default([]) }}"
       with_dict: "{{ ansible_device_links.uuids }}"
       when: item.key.startswith('dm')
 
     - name: Get part_uuids
       set_fact:
-        part_uuids: "{{ part_uuids + item.value }}"
+        part_uuids: "{{ part_uuids | default([]) + item.value }}"
       with_dict: "{{ ansible_device_links.uuids }}"
       when: item.key.startswith(install_drive)
 

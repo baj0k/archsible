@@ -1,4 +1,7 @@
 ---
+# Disk on which the system should be installed.
+#install_drive: sdb
+
 # Partitions size
 root_size: 50G
 var_size: 10G
