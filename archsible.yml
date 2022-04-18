@@ -3,6 +3,7 @@
   tags: install
   hosts: all
   remote_user: root
+
   pre_tasks:
     - name: End the play if host is not booted from Arch Linux ISO
       meta: end_host
@@ -32,9 +33,9 @@
   hosts: all
   remote_user: test
   gather_facts: no
+
   pre_tasks:
     - name: Wait one minute for connection
-      tags: install
       wait_for_connection:
         timeout: 60
         delay: 5

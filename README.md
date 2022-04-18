@@ -1,7 +1,6 @@
 # Archsible
 Ansible playbook designed to automate the deployment of Arch Linux environment across different machines.
 
-
 ## Plays
 Archsible playbook consists of two plays - installation of the base Arch Linux OS and post-installation configuration.
 Please note that the post-installation play is heavily customized and will require changes before being usable for anyone else.
@@ -31,7 +30,6 @@ Additionally, 'install' tag can be used to only install the base Arch Linux OS a
 ```
 $ ansible-playbook -i hosts.cfg --ask-pass archsible.yml --limit=<hosts_group> --tags install
 ```
-
 ## Important information 
 Below cases should be considered workarounds and changed when it becomes possible.
 - The LUKS1 format is used for encryption because grub doesn't yet fully support LUKS2. This requires upstream code to be patched.
