@@ -14,6 +14,15 @@ Please note that the post-installation play is heavily customized and will requi
 ## Prerequisites
 - UEFI support enabled on target machine
 
+The 'setup-vm.sh' script can be used for provisioning a kvm/qemu libvirt guest for testing purposes.
+Execute the script and follow the prompts to create a testing virtual machine with snapshots after install and post-install plays.
+```
+$ /bin/sh setup-vm.sh
+```
+Script uses a default name 'archsible' for the VM, however different name can be specified in the first parameter.
+```
+$ /bin/sh setup-vm.sh other-name
+```
 ## Usage
 On target machine:
 - Boot the Arch Linux installation medium and set the root password using passwd command
@@ -36,7 +45,8 @@ Similarly, 'post-install', 'hardening' and 'blackarch' tags can be used to only 
 Below cases should be considered workarounds and changed when it becomes possible.
 - The LUKS1 format is used for encryption because grub doesn't yet fully support LUKS2. This requires upstream code to be patched.
 - Any installation tasks that are done in chroot are using a command ansible module. This happens due to the current lack of possibility to execute ansible tasks in remote chroot.
-- Task for installing the libxft-bgra package which is a patched version of libxft are required because currently libxft has some troubles displaying unicode glyphs.
+- Task for installing the libxft-bgra package which is a patched version of libxft are required because currently libxft has some troubles displaying Unicode glyphs.
+- Task for changing blackarch-mirrorlist uses hard-coded values because the lineinfile module currently doesn't support combining backrefs with insertbefore and insertafter directives.
 
 ## Full disk encryption
 This setup utilizes the LVM on LUKS scenario using a single physical disk with two partitions.

@@ -1,0 +1,23 @@
+[options]
+Architecture = auto
+HoldPkg     = pacman glibc
+XferCommand = /usr/local/bin/pacman-aria2 %u %o
+NoExtract = mirrorlist.pacnew
+ParallelDownloads = 5
+SigLevel    = Required DatabaseOptional
+LocalFileSigLevel = Optional
+Color
+ILoveCandy
+CheckSpace
+
+[core]
+Include = /etc/pacman.d/mirrorlist
+
+[extra]
+Include = /etc/pacman.d/mirrorlist
+
+[community]
+Include = /etc/pacman.d/mirrorlist
+
+[multilib]
+Include = /etc/pacman.d/mirrorlist

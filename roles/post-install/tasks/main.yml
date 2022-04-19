@@ -48,21 +48,10 @@
 - name: Package management
   become: yes
   block:
-    - name: Enabel multilib repository and configure pacman
-      lineinfile:
+    - name: Create pacman config file
+      template: 
+        src: pacman.conf.j2
         dest: /etc/pacman.conf
-        regexp: "{{ item.regex }}"
-        line: "{{ item.line }}"
-        insertafter: "{{ item.insertafter }}"
-      loop:
-        - {regex: Architecture, line: Architecture = x86_64, insertafter: }
-        - {regex: XferCommand =, line: "XferCommand = /usr/local/bin/pacman-aria2 %u %o", insertafter: }
-        - {regex: Color, line: Color, insertafter: }
-        - {regex: ILoveCandy, line: ILoveCandy, insertafter: Color}
-        - {regex: ParallelDownloads, line: ParallelDownloads = 5, insertafter: }
-        - {regex: NoExtract, line: NoExtract = mirrorlist.pacnew, insertafter: }
-        - {regex: '^#\[multilib\]$', line: "[multilib]", insertafter: }
-        - {regex: Include =, line: Include = /etc/pacman.d/mirrorlist, insertafter: "[multilib]" }
 
     - name: Create pacman hooks directory
       file:

@@ -35,7 +35,7 @@
   gather_facts: no
 
   pre_tasks:
-    - name: Wait one minute for connection
+    - name: Wait up to one minute for connection
       wait_for_connection:
         timeout: 60
         delay: 5
