@@ -1,6 +1,4 @@
-# TODO: add symlinks for user.js chrome.css in firefox tasks
 # TODO: get rid of the tags file somehow (newsboat)
-# TODO: update configuration files, use: ranger --copy-config all
 ---
 - name: Gather facts
   setup:
@@ -93,9 +91,7 @@
         - { packages: [dunst,libnotify], condition: "{{ dunst }}" }
         - { packages: [docker,docker-compose], condition: "{{ docker }}" }
         - { packages: [firefox], condition: "{{ firefox }}" }
-        - { packages: [xorg,xorg-xinit,xwallpaper,xclip,xcompmgr], condition: "{{ i3 }}" }
         - { packages: [i3-gaps,i3blocks,sxiv], condition: "{{ i3 }}" }
-        - { packages: [noto-fonts,ttf-joypixels,ttf-font-awesome,ttf-dejavu,ttf-inconsolata,ttf-liberation,adobe-source-han-sans-otc-fonts],condition: "{{ i3 }}" }
         - { packages: [qemu,libvirt,dnsmasq,dmidecode,virt-manager,edk2-ovmf,python-lxml], condition: "{{ libvirt }}" }
         - { packages: [mpd], condition: "{{ mpd }}" }
         - { packages: [mpv,yt-dlp], condition: "{{ mpv }}" }
@@ -105,6 +101,8 @@
         - { packages: [neovim,shellcheck], condition: "{{ neovim }}" }
         - { packages: [ranger,ueberzug], condition: "{{ ranger }}" }
         - { packages: [tmux], condition: "{{ tmux }}" }
+        - { packages: [xorg,xorg-xinit,xwallpaper,xclip,xcompmgr], condition: "{{ xorg }}" }
+        - { packages: [noto-fonts,ttf-joypixels,ttf-font-awesome,ttf-dejavu,ttf-inconsolata,ttf-liberation,adobe-source-han-sans-otc-fonts],condition: "{{ xorg }}" }
         - { packages: [pdfgrep,zathura,zathura-pdf-mupdf], condition: "{{ zathura }}" }
         - { packages: [bat,checkbashisms,zsh,zsh-completions,zsh-syntax-highlighting], condition: "{{ zsh }}" }
       when: item.condition
@@ -148,23 +146,6 @@
         src: dash.hook.j2
         dest: /etc/pacman.d/hooks/dash.hook
 
-          #    - name: Create pacman hook for persistant relinking of /bin/sh to dash
-          #      blockinfile: 
-          #        path: /etc/pacman.d/hooks/dash.hook
-          #        create: true
-          #        block: |
-          #          [Trigger]
-          #          Type = Package
-          #          Operation = Install
-          #          Operation = Upgrade
-          #          Target = bash
-          #
-          #          [Action]
-          #          Description = Re-pointing /bin/sh symlink to dash...
-          #          When = PostTransaction
-          #          Exec = /usr/bin/ln -sfT dash /usr/bin/sh
-          #          Depends = dash
-
 - name: Systemd configuration
   become: yes
   block:
@@ -173,63 +154,15 @@
         src: pacman-aria2dl.j2
         dest: /usr/local/bin/pacman-aria2dl
 
-          #    - name: Create Xfer pacman-aria2dl script
-          #      blockinfile: 
-          #        path: /usr/local/bin/pacman-aria2dl
-          #        create: true
-          #        block: |
-          #          #!/bin/sh
-          #          TMPFILE=$(mktemp)
-          #          trap '/usr/bin/rm -f "$TMPFILE"' EXIT
-          #          
-          #          packages=$(/usr/bin/checkupdates | /usr/bin/cut -d' ' -f1); [ -z "${packages}" ] && exit 0
-          #          queue=$(/usr/bin/pacman -Sp ${packages} | /usr/bin/grep -v "file:///"); [ -z "${queue}" ] && exit 0
-          #          
-          #          printf '%s\n' "${queue}" > "${TMPFILE}"
-          #          /usr/bin/aria2c --input-file="${TMPFILE}" --no-conf --dir=/var/cache/pacman/pkg --max-concurrent-downloads=10 --continue=true --quiet=true --allow-overwrite=true
-
     - name: Create pacman-aria2dl systemd service
       template: 
         src: pacman-aria2dl.service.j2
         dest: /etc/systemd/system/pacman-aria2dl.service
 
-          #    - name: Create pacman-aria2dl systemd service
-          #      blockinfile: 
-          #        path: /etc/systemd/system/pacman-aria2dl.service
-          #        create: true
-          #        block: |
-          #          [Unit]
-          #          Description=Downloads tarballs of updated versions of packages
-          #          Wants=pacman-aria2dl.timer
-          #
-          #          [Service]
-          #          Type=oneshot
-          #          ExecStart=/usr/local/bin/pacman-aria2dl
-          #
-          #          [Install]
-          #          WantedBy=multi-user.target
-
     - name: Create pacman-aria2dl systemd timer
       template: 
         src: pacman-aria2dl.timer.j2
         dest: /etc/systemd/system/pacman-aria2dl.timer
-
-          #    - name: Create pacman-aria2dl systemd timer
-          #      blockinfile: 
-          #        path: /etc/systemd/system/pacman-aria2dl.timer
-          #        create: true
-          #        block: |
-          #          [Unit]
-          #          Description=Downloads tarballs of updated versions of packages
-          #          Requires=pacman-aria2dl.service
-          #
-          #          [Timer]
-          #          Unit=pacman-aria2dl.service
-          #          OnCalendar=*:0/30
-          #          OnBootSec=30
-          #
-          #          [Install]
-          #          WantedBy=timers.target
         
     - name: Enable service timer units
       systemd:
@@ -321,47 +254,26 @@
             path: "{{ ansible_env.HOME }}/.mozilla/firefox/"
             state: directory
 
-        - name: Firefox - Create profiles.ini
+        - name: Firefox - Create profiles.ini and installs.ini
           template: 
-            src: firefox/profiles.ini.j2
-            dest: "{{ ansible_env.HOME }}/.mozilla/firefox/profiles.ini"
+            src: "firefox/{{ item }}.j2"
+            dest: "{{ ansible_env.HOME }}/.mozilla/firefox/{{ item }}"
+          loop:
+            - profiles.ini
+            - installs.ini
 
-              #        - name: Firefox - Create profiles.ini
-              #          blockinfile:
-              #            create: yes
-              #            path: "{{ ansible_env.HOME }}/.mozilla/firefox/profiles.ini"
-              #            block: |
-              #              [Install4F96D1932A9F858E]
-              #              Default={{ user_username }}
-              #              Locked=1
-              #    
-              #              [Profile0]
-              #              Name={{ user_username }}
-              #              IsRelative=0
-              #              Path={{ user_username }}
-              #              Default=1
-              #    
-              #              [General]
-              #              StartWithLastProfile=1
-              #              Version=2
-    
-        - name: Firefox - Create installs.ini
-          template: 
-            src: firefox/installs.ini.j2
-            dest: "{{ ansible_env.HOME }}/.mozilla/firefox/installs.ini"
-
-              #        - name: Firefox - Create install.ini
-              #          blockinfile:
-              #            create: yes
-              #            path: "{{ ansible_env.HOME }}/.mozilla/firefox/installs.ini"
-              #            block: |
-              #              [4F96D1932A9F858E]
-              #              Default={{ user_username }}
-              #              Locked=1
-    
         - name: Firefox - Create default profile
-          command: firefox -headless -no-remote -CreateProfile "{{ user_username }} {{ ansible_env.HOME }}/.mozilla/firefox/{{ user_username }}"
+          command: firefox -headless -no-remote -CreateProfile "{{ ansible_user }} {{ ansible_env.HOME }}/.mozilla/firefox/{{ ansible_user }}"
     
+        - name: Firefox - Link configuration files
+          file:
+            src: "{{ ansible_env.HOME }}/.config/ffox/{{ item }}"
+            path: "{{ ansible_env.HOME }}/.mozilla/firefox/{{ item }}"
+            state: link
+          loop:
+            - chrome
+            - user.js
+
         - name: Firefox - Create extension directory
           become: yes
           file:
@@ -373,8 +285,6 @@
           get_url:
             url: "https://addons.mozilla.org/firefox/downloads/latest/{{ item.name }}/latest.xpi"
             dest: "/usr/lib/firefox/browser/extensions/{{ item.id }}.xpi"
-          loop_control:
-            index_var: loop_index
           loop:
             - { name: multi-account-containers, id: "@testpilot-containers" }
             - { name: i-dont-care-about-cookies, id: jid1-KKzOGWgsW3Ao4Q@jetpack }
@@ -405,18 +315,6 @@
                 src: xorg/00-keyboard.conf.j2
                 dest: /etc/X11/xorg.conf.d/00-keyboard.conf
 
-                  #            - name: Xorg - Allow language specific characters in terminal
-                  #              become: yes
-                  #              blockinfile:
-                  #                create: yes
-                  #                path: /etc/X11/xorg.conf.d/00-keyboard.conf
-                  #                block: |
-                  #                  Section "InputClass"
-                  #                          Identifier "system-keyboard"
-                  #                          MatchIsKeyboard "on"
-                  #                          Option "XkbLayout" "{{ country | lower }}"
-                  #                  EndSection
-    
             - name: Xorg - Get available video outputs
               command: find /sys/class/drm/ -name "card0-*" -printf "%f\n"
               register: cards
@@ -463,21 +361,6 @@
               loop_control:
                 index_var: loop_index
 
-                  #      - name: Xorg - Configure monitor resolution
-                  #        become: yes
-                  #        blockinfile:
-                  #          create: yes
-                  #          path: "/etc/X11/xorg.conf.d/1{{ loop_index }}-{{ item.card }}.conf"
-                  #          block: |
-                  #            Section "Monitor"
-                  #                Identifier  "{{ item.card }}"
-                  #                Option      "PreferredMode" "{{ display_resolution | default(item.mode) }}"
-                  #                Option      "Primary" "true"
-                  #            EndSection
-                  #        loop: "{{ resolutions }}"
-                  #        loop_control:
-                  #          index_var: loop_index
-            
             - name: Xorg - Configure monitor layout
               become: yes
               lineinfile:
@@ -488,7 +371,7 @@
               loop_control:
                 extended: yes
               when: resolutions | length > 1 and ansible_loop.index0 != 0
-      when: i3
+      when: xorg
     
     - name: Libvirt configuration
       block:
@@ -499,7 +382,7 @@
             state: absent
             extra_args: -dd
     
-        - name: Libvirt - Install packages
+        - name: Libvirt - Install iptables-nft
           become: yes
           pacman:
             name: 
@@ -609,7 +492,7 @@
         - name: Zsh - Change default shell
           become: yes
           user:
-            name: "{{ ansible_user_id }}"
+            name: "{{ ansible_user }}"
             shell: /bin/zsh
     
         - name: Zsh - Workaround for XDG compliance

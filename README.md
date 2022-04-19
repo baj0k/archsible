@@ -42,7 +42,7 @@ $ ansible-playbook archsible.yml --limit=<hosts_group> --tags install
 Similarly, 'post-install', 'hardening' and 'blackarch' tags can be used to only execute corresponding roles.
 
 ## Important information 
-Below cases should be considered workarounds and changed when it becomes possible.
+Below points should be considered workarounds and changed when it becomes possible.
 - The LUKS1 format is used for encryption because grub doesn't yet fully support LUKS2. This requires upstream code to be patched.
 - Any installation tasks that are done in chroot are using a command ansible module. This happens due to the current lack of possibility to execute ansible tasks in remote chroot.
 - Task for installing the libxft-bgra package which is a patched version of libxft are required because currently libxft has some troubles displaying Unicode glyphs.

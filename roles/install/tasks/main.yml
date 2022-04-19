@@ -317,7 +317,7 @@
       command: arch-chroot /mnt usermod -p "{{ root_password | password_hash('sha512') }}" root
 
     - name: Create system user
-      command: arch-chroot /mnt useradd -m -G adm,games,sys,wheel,lp,audio,kvm,video "{{ user_username }}" -p "{{ user_password | password_hash('sha512') }}"
+      command: arch-chroot /mnt useradd -m -G adm,games,sys,wheel,lp,audio,kvm,video "{{ user_name }}" -p "{{ user_pw | password_hash('sha512') }}"
     
     - name: Give passwordless sudo access to the wheel group
       lineinfile:

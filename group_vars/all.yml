@@ -32,13 +32,13 @@ vartmp_size: 2G
 # Passwords & user configuration
 luks_password: test
 root_password: test
-user_username: test
-user_password: test
+user_name: test
+user_pw: test
 
 #------------------------------
 #  Post-installation settings
 #------------------------------
-# Migrate user data from ansible controller
+# Migrate data from ansible controller
 migrate: false
 
 # Self explanatory
@@ -65,5 +65,6 @@ neovim: true
 ranger: true
 suckless: true
 tmux: true
+xorg: true
 zathura: true
 zsh: true
