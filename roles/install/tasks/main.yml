@@ -178,7 +178,7 @@
         line: "XferCommand = /usr/bin/aria2c --allow-overwrite=true --continue=true --file-allocation=none --log-level=error --max-tries=2 --max-connection-per-server=2 --max-file-not-found=5 --min-split-size=5M --no-conf --remote-time=true --summary-interval=60 --timeout=5 --dir=/ --out %o %u"
 
 - name: Install essential packages
-  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub openssh python sudo aria2 "{{ proc }}-ucode"
+  command: pacstrap /mnt base linux linux-firmware lvm2 efibootmgr grub openssh python sudo aria2 "{{ proc }}-ucode" vim
 
 - name: Generate fstab
   block:
@@ -293,18 +293,9 @@
         line: "ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --any"
 
     - name: Configure wired adapter
-      blockinfile: 
-        path: /mnt/etc/systemd/network/20-wired.network
-        create: true
-        block: |
-          [Match]
-          Name=eth0
-
-          [Network]
-          DHCP=yes
-
-          [DHCPv4]
-          RouteMetric=10
+      template: 
+        src: 20-wired.network
+        dest: /mnt/etc/systemd/network/20-wired.network
 
     - name: Configure wireless adapter
       block:
@@ -312,18 +303,9 @@
           command: arch-chroot /mnt pacman -S iwd --noconfirm
 
         - name: Configure wireless adapter
-          blockinfile: 
-            path: /mnt/etc/systemd/network/25-wireless.network
-            create: true
-            block: |
-              [Match]
-              Name=wlan0
-              
-              [Network]
-              DHCP=yes
-              
-              [DHCPv4]
-              RouteMetric=20
+          template: 
+            src: 25-wireless.network
+            dest: /mnt/etc/systemd/network/25-wireless.network
 
         - name: Enable wireless deamon
           command: arch-chroot /mnt systemctl enable iwd

@@ -1,5 +1,8 @@
 # TODO: use UEFI secure boot to sign the bootloader with user's own keys (Evil Maid prevention)
 ---
+- name: Gather facts
+  setup:
+
 - name: Install additional packages
   become: yes
   pacman:

@@ -22,14 +22,16 @@ On ansible controller:
 - Modify hosts.cfg file according to your needs
 - Review default variables in the group_vars folder and change them if necessary
 
-Run the playbook using following command.
+Run the playbook using following command. Host groups are defined in hosts.cfg file.
 ```
-$ ansible-playbook -i hosts.cfg --ask-pass archsible.yml --limit=<hosts_group>
+$ ansible-playbook archsible.yml --limit=<hosts_group>
 ```
 Additionally, 'install' tag can be used to only install the base Arch Linux OS and skip post-configuration tasks.
 ```
-$ ansible-playbook -i hosts.cfg --ask-pass archsible.yml --limit=<hosts_group> --tags install
+$ ansible-playbook archsible.yml --limit=<hosts_group> --tags install
 ```
+Similarly, 'post-install', 'hardening' and 'blackarch' tags can be used to only execute corresponding roles.
+
 ## Important information 
 Below cases should be considered workarounds and changed when it becomes possible.
 - The LUKS1 format is used for encryption because grub doesn't yet fully support LUKS2. This requires upstream code to be patched.

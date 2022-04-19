@@ -1,0 +1,11 @@
+[Unit]
+Description=Downloads tarballs of updated versions of packages
+Requires=pacman-aria2dl.service
+
+[Timer]
+Unit=pacman-aria2dl.service
+OnCalendar=*:0/30
+OnBootSec=30
+
+[Install]
+WantedBy=timers.target

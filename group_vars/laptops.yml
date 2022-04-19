@@ -1,4 +1,7 @@
+# TODO: for laptops only add tasks for setting up acpid events and enabling acpid service 
 ---
 # Machine specific software
 machine_specific_software:
   - autorandr
+  - acpi
+  - acpid

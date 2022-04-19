@@ -1,4 +1,7 @@
 ---
+- name: Gather facts
+  setup:
+
 - name: Download blackarch setup script
   get_url:
     url: https://blackarch.org/strap.sh

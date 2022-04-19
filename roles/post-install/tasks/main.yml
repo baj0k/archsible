@@ -1,8 +1,10 @@
-# TODO: add acpi if needed and check if acpi is needed on desktop or laptop only?
 # TODO: add symlinks for user.js chrome.css in firefox tasks
 # TODO: get rid of the tags file somehow (newsboat)
 # TODO: update configuration files, use: ranger --copy-config all
 ---
+- name: Gather facts
+  setup:
+
 - name: Localization settings
   become: yes
   block:
@@ -35,13 +37,9 @@
         line: LANG=en_US.UTF-8
     
     - name: Create vconsole.conf
-      blockinfile:
-        create: yes
-        path: /etc/vconsole.conf
-        block: |
-          KEYMAP={{ country|lower }}
-          FONT=Lat2-Terminus16
-          FONT_MAP=8859-2
+      template: 
+        src: vconsole.conf.j2
+        dest: /etc/vconsole.conf
 
     - name: Set a hostname
       hostname:
@@ -66,46 +64,21 @@
         - {regex: '^#\[multilib\]$', line: "[multilib]", insertafter: }
         - {regex: Include =, line: Include = /etc/pacman.d/mirrorlist, insertafter: "[multilib]" }
 
-    - name: Create pacman-aria2 script
-      blockinfile: 
-        path: /usr/local/bin/pacman-aria2
-        create: true
-        mode: +x
-        block: |
-          #!/bin/sh
-          f=$(printf '%s' "$1" | awk -F/ '{print $NF}')
-          echo Downloading "${f}" && /usr/bin/aria2c --conf-path=/etc/pacman.d/pacman-aria2.conf -d / -o "${2}" "${1}"
+    - name: Create pacman hooks directory
+      file:
+        path: /etc/pacman.d/hooks
+        state: directory
 
+    - name: Create pacman-aria2 script
+      template: 
+        src: pacman-aria2.j2
+        dest: /usr/local/bin/pacman-aria2
+        mode: +x
+    
     - name: Create pacman-aria2 config file
-      blockinfile: 
-        path: /etc/pacman.d/pacman-aria2.conf
-        create: true
-        block: |
-          # error handling
-          timeout=5
-          connect-timeout=30
-          max-tries=3
-          retry-wait=10
-          max-file-not-found=1
-          # downloading
-          split=5
-          max-connection-per-server=5
-          min-split-size=1M
-          max-concurrent-downloads=1
-          file-allocation=none
-          remote-time=true
-          conditional-get=true
-          no-netrc=true
-          # resuming
-          continue=true
-          allow-overwrite=true
-          always-resume=false
-          # console
-          quiet=true
-          console-log-level=warn
-          summary-interval=0
-          # logging
-          log-level=error
+      template: 
+        src: pacman-aria2.conf.j2
+        dest: /etc/pacman.d/pacman-aria2.conf
 
     - name: Configure makepkg
       lineinfile:
@@ -182,72 +155,92 @@
         force: yes
 
     - name: Create pacman hook for persistant relinking of /bin/sh to dash
-      blockinfile: 
-        path: /etc/pacman.d/hooks/dash.hook
-        create: true
-        block: |
-          [Trigger]
-          Type = Package
-          Operation = Install
-          Operation = Upgrade
-          Target = bash
+      template: 
+        src: dash.hook.j2
+        dest: /etc/pacman.d/hooks/dash.hook
 
-          [Action]
-          Description = Re-pointing /bin/sh symlink to dash...
-          When = PostTransaction
-          Exec = /usr/bin/ln -sfT dash /usr/bin/sh
-          Depends = dash
+          #    - name: Create pacman hook for persistant relinking of /bin/sh to dash
+          #      blockinfile: 
+          #        path: /etc/pacman.d/hooks/dash.hook
+          #        create: true
+          #        block: |
+          #          [Trigger]
+          #          Type = Package
+          #          Operation = Install
+          #          Operation = Upgrade
+          #          Target = bash
+          #
+          #          [Action]
+          #          Description = Re-pointing /bin/sh symlink to dash...
+          #          When = PostTransaction
+          #          Exec = /usr/bin/ln -sfT dash /usr/bin/sh
+          #          Depends = dash
 
 - name: Systemd configuration
   become: yes
   block:
     - name: Create Xfer pacman-aria2dl script
-      blockinfile: 
-        path: "/usr/local/bin/pacman-aria2dl"
-        create: true
-        block: |
-          #!/bin/sh
-          TMPFILE=$(mktemp)
-          trap '/usr/bin/rm -f "$TMPFILE"' EXIT
-          
-          packages=$(/usr/bin/checkupdates | /usr/bin/cut -d' ' -f1); [ -z "${packages}" ] && exit 0
-          queue=$(/usr/bin/pacman -Sp ${packages} | /usr/bin/grep -v "file:///"); [ -z "${queue}" ] && exit 0
-          
-          printf '%s\n' "${queue}" > "${TMPFILE}"
-          /usr/bin/aria2c --input-file="${TMPFILE}" --no-conf --dir=/var/cache/pacman/pkg --max-concurrent-downloads=10 --continue=true --quiet=true --allow-overwrite=true
+      template: 
+        src: pacman-aria2dl.j2
+        dest: /usr/local/bin/pacman-aria2dl
+
+          #    - name: Create Xfer pacman-aria2dl script
+          #      blockinfile: 
+          #        path: /usr/local/bin/pacman-aria2dl
+          #        create: true
+          #        block: |
+          #          #!/bin/sh
+          #          TMPFILE=$(mktemp)
+          #          trap '/usr/bin/rm -f "$TMPFILE"' EXIT
+          #          
+          #          packages=$(/usr/bin/checkupdates | /usr/bin/cut -d' ' -f1); [ -z "${packages}" ] && exit 0
+          #          queue=$(/usr/bin/pacman -Sp ${packages} | /usr/bin/grep -v "file:///"); [ -z "${queue}" ] && exit 0
+          #          
+          #          printf '%s\n' "${queue}" > "${TMPFILE}"
+          #          /usr/bin/aria2c --input-file="${TMPFILE}" --no-conf --dir=/var/cache/pacman/pkg --max-concurrent-downloads=10 --continue=true --quiet=true --allow-overwrite=true
 
     - name: Create pacman-aria2dl systemd service
-      blockinfile: 
-        path: /etc/systemd/system/pacman-aria2dl.service
-        create: true
-        block: |
-          [Unit]
-          Description=Downloads tarballs of updated versions of packages
-          Wants=pacman-aria2dl.timer
+      template: 
+        src: pacman-aria2dl.service.j2
+        dest: /etc/systemd/system/pacman-aria2dl.service
 
-          [Service]
-          Type=oneshot
-          ExecStart=/usr/local/bin/pacman-aria2dl
-
-          [Install]
-          WantedBy=multi-user.target
+          #    - name: Create pacman-aria2dl systemd service
+          #      blockinfile: 
+          #        path: /etc/systemd/system/pacman-aria2dl.service
+          #        create: true
+          #        block: |
+          #          [Unit]
+          #          Description=Downloads tarballs of updated versions of packages
+          #          Wants=pacman-aria2dl.timer
+          #
+          #          [Service]
+          #          Type=oneshot
+          #          ExecStart=/usr/local/bin/pacman-aria2dl
+          #
+          #          [Install]
+          #          WantedBy=multi-user.target
 
     - name: Create pacman-aria2dl systemd timer
-      blockinfile: 
-        path: /etc/systemd/system/pacman-aria2dl.timer
-        create: true
-        block: |
-          [Unit]
-          Description=Downloads tarballs of updated versions of packages
-          Requires=pacman-aria2dl.service
+      template: 
+        src: pacman-aria2dl.timer.j2
+        dest: /etc/systemd/system/pacman-aria2dl.timer
 
-          [Timer]
-          Unit=pacman-aria2dl.service
-          OnCalendar=*:0/30
-          OnBootSec=30
-
-          [Install]
-          WantedBy=timers.target
+          #    - name: Create pacman-aria2dl systemd timer
+          #      blockinfile: 
+          #        path: /etc/systemd/system/pacman-aria2dl.timer
+          #        create: true
+          #        block: |
+          #          [Unit]
+          #          Description=Downloads tarballs of updated versions of packages
+          #          Requires=pacman-aria2dl.service
+          #
+          #          [Timer]
+          #          Unit=pacman-aria2dl.service
+          #          OnCalendar=*:0/30
+          #          OnBootSec=30
+          #
+          #          [Install]
+          #          WantedBy=timers.target
         
     - name: Enable service timer units
       systemd:
@@ -334,33 +327,48 @@
 
     - name: Firefox configuration
       block:
+        - name: Create firefox directory
+          file:
+            path: "{{ ansible_env.HOME }}/.mozilla/firefox/"
+            state: directory
+
         - name: Firefox - Create profiles.ini
-          blockinfile:
-            create: yes
-            path: "{{ ansible_env.HOME }}/.mozilla/firefox/profiles.ini"
-            block: |
-              [Install4F96D1932A9F858E]
-              Default={{ user_username }}
-              Locked=1
+          template: 
+            src: firefox/profiles.ini.j2
+            dest: "{{ ansible_env.HOME }}/.mozilla/firefox/profiles.ini"
+
+              #        - name: Firefox - Create profiles.ini
+              #          blockinfile:
+              #            create: yes
+              #            path: "{{ ansible_env.HOME }}/.mozilla/firefox/profiles.ini"
+              #            block: |
+              #              [Install4F96D1932A9F858E]
+              #              Default={{ user_username }}
+              #              Locked=1
+              #    
+              #              [Profile0]
+              #              Name={{ user_username }}
+              #              IsRelative=0
+              #              Path={{ user_username }}
+              #              Default=1
+              #    
+              #              [General]
+              #              StartWithLastProfile=1
+              #              Version=2
     
-              [Profile0]
-              Name={{ user_username }}
-              IsRelative=0
-              Path={{ user_username }}
-              Default=1
-    
-              [General]
-              StartWithLastProfile=1
-              Version=2
-    
-        - name: Firefox - Create install.ini
-          blockinfile:
-            create: yes
-            path: "{{ ansible_env.HOME }}/.mozilla/firefox/installs.ini"
-            block: |
-              [4F96D1932A9F858E]
-              Default={{ user_username }}
-              Locked=1
+        - name: Firefox - Create installs.ini
+          template: 
+            src: firefox/installs.ini.j2
+            dest: "{{ ansible_env.HOME }}/.mozilla/firefox/installs.ini"
+
+              #        - name: Firefox - Create install.ini
+              #          blockinfile:
+              #            create: yes
+              #            path: "{{ ansible_env.HOME }}/.mozilla/firefox/installs.ini"
+              #            block: |
+              #              [4F96D1932A9F858E]
+              #              Default={{ user_username }}
+              #              Locked=1
     
         - name: Firefox - Create default profile
           command: firefox -headless -no-remote -CreateProfile "{{ user_username }} {{ ansible_env.HOME }}/.mozilla/firefox/{{ user_username }}"
@@ -404,15 +412,21 @@
     
             - name: Xorg - Allow language specific characters in terminal
               become: yes
-              blockinfile:
-                create: yes
-                path: /etc/X11/xorg.conf.d/00-keyboard.conf
-                block: |
-                  Section "InputClass"
-                          Identifier "system-keyboard"
-                          MatchIsKeyboard "on"
-                          Option "XkbLayout" "{{ country | lower }}"
-                  EndSection
+              template: 
+                src: xorg/00-keyboard.conf.j2
+                dest: /etc/X11/xorg.conf.d/00-keyboard.conf
+
+                  #            - name: Xorg - Allow language specific characters in terminal
+                  #              become: yes
+                  #              blockinfile:
+                  #                create: yes
+                  #                path: /etc/X11/xorg.conf.d/00-keyboard.conf
+                  #                block: |
+                  #                  Section "InputClass"
+                  #                          Identifier "system-keyboard"
+                  #                          MatchIsKeyboard "on"
+                  #                          Option "XkbLayout" "{{ country | lower }}"
+                  #                  EndSection
     
             - name: Xorg - Get available video outputs
               command: find /sys/class/drm/ -name "card0-*" -printf "%f\n"
@@ -453,18 +467,27 @@
             
             - name: Xorg - Configure monitor resolution
               become: yes
-              blockinfile:
-                create: yes
-                path: "/etc/X11/xorg.conf.d/1{{ loop_index }}-{{ item.card }}.conf"
-                block: |
-                  Section "Monitor"
-                      Identifier  "{{ item.card }}"
-                      Option      "PreferredMode" "{{ display_resolution | default(item.mode) }}"
-                      Option      "Primary" "true"
-                  EndSection
+              template: 
+                src: xorg/1x-monitor.conf.j2
+                dest: "/etc/X11/xorg.conf.d/1{{ loop_index }}-{{ item.card }}.conf"
               loop: "{{ resolutions }}"
               loop_control:
                 index_var: loop_index
+
+                  #      - name: Xorg - Configure monitor resolution
+                  #        become: yes
+                  #        blockinfile:
+                  #          create: yes
+                  #          path: "/etc/X11/xorg.conf.d/1{{ loop_index }}-{{ item.card }}.conf"
+                  #          block: |
+                  #            Section "Monitor"
+                  #                Identifier  "{{ item.card }}"
+                  #                Option      "PreferredMode" "{{ display_resolution | default(item.mode) }}"
+                  #                Option      "Primary" "true"
+                  #            EndSection
+                  #        loop: "{{ resolutions }}"
+                  #        loop_control:
+                  #          index_var: loop_index
             
             - name: Xorg - Configure monitor layout
               become: yes

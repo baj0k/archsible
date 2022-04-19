@@ -1,0 +1,5 @@
+Section "Monitor"
+    Identifier  "{{ item.card }}"
+    Option      "PreferredMode" "{{ display_resolution | default(item.mode) }}"
+    Option      "Primary" "true"
+EndSection

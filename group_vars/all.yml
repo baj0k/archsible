@@ -1,16 +1,16 @@
 ---
-###############################
-## General settings
-###############################
+#------------------------------
+# General settings
+#------------------------------
 # Localization settings
 region: Europe
 country: PL
 city: Warsaw
 hostname: TEST
 
-###############################
-## Installation settings
-###############################
+#------------------------------
+#  Installation settings
+#------------------------------
 # Overwrite disk with random data before installation
 shred: false
 
@@ -35,9 +35,9 @@ root_password: test
 user_username: test
 user_password: test
 
-###############################
-## Post-installation settings
-###############################
+#------------------------------
+#  Post-installation settings
+#------------------------------
 # Migrate user data from ansible controller
 migrate: false
 

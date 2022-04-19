@@ -44,14 +44,10 @@
       command: ping -c 1 -w 1 google.com
       changed_when: False
 
-    - name: Gather facts
-      setup:
-
   roles:
-    - post-install
-    - dotfiles
-    - hardening
-    - blackarch
+    - { role: post-install, tags: post-install }
+    - { role: hardening, tags: hardening }
+    - { role: blackarch, tags: blackarch }
 
   post_tasks:
     - name: Reboot after installation is complete
