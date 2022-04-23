@@ -54,7 +54,6 @@ docker: true
 dunst: true
 firefox: true
 git: true
-i3: true
 libvirt: false
 mpd: false
 mpv: false

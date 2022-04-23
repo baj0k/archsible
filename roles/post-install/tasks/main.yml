@@ -1,4 +1,3 @@
-# TODO: get rid of the tags file somehow (newsboat)
 ---
 - name: Gather facts
   setup:
@@ -91,7 +90,6 @@
         - { packages: [dunst,libnotify], condition: "{{ dunst }}" }
         - { packages: [docker,docker-compose], condition: "{{ docker }}" }
         - { packages: [firefox], condition: "{{ firefox }}" }
-        - { packages: [i3-gaps,i3blocks,sxiv], condition: "{{ i3 }}" }
         - { packages: [qemu,libvirt,dnsmasq,dmidecode,virt-manager,edk2-ovmf,python-lxml], condition: "{{ libvirt }}" }
         - { packages: [mpd], condition: "{{ mpd }}" }
         - { packages: [mpv,yt-dlp], condition: "{{ mpv }}" }
@@ -101,7 +99,7 @@
         - { packages: [neovim,shellcheck], condition: "{{ neovim }}" }
         - { packages: [ranger,ueberzug], condition: "{{ ranger }}" }
         - { packages: [tmux], condition: "{{ tmux }}" }
-        - { packages: [xorg,xorg-xinit,xwallpaper,xclip,xcompmgr], condition: "{{ xorg }}" }
+        - { packages: [xorg,xorg-xinit,xwallpaper,xclip,xcompmgr,xdotool,xorg-xprop,sxiv], condition: "{{ xorg }}" }
         - { packages: [noto-fonts,ttf-joypixels,ttf-font-awesome,ttf-dejavu,ttf-inconsolata,ttf-liberation,adobe-source-han-sans-otc-fonts],condition: "{{ xorg }}" }
         - { packages: [pdfgrep,zathura,zathura-pdf-mupdf], condition: "{{ zathura }}" }
         - { packages: [bat,checkbashisms,zsh,zsh-completions,zsh-syntax-highlighting], condition: "{{ zsh }}" }
@@ -464,6 +462,8 @@
             target: cleaninstall
           loop:
             - dmenu
+            - dwm
+            - dwmblocks
             - sent
             - slock
             - st
