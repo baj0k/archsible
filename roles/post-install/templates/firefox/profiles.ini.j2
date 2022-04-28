@@ -1,11 +1,11 @@
 [Install4F96D1932A9F858E]
-Default={{ ansible_user }}
+Default={{ ansible_env.HOME }}/.local/share/firefox/{{ ansible_user }}
 Locked=1
 
 [Profile0]
 Name={{ ansible_user }}
 IsRelative=0
-Path={{ ansible_user }}
+Path={{ ansible_env.HOME }}/.local/share/firefox/{{ ansible_user }}
 Default=1
 
 [General]

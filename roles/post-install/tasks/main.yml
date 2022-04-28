@@ -249,24 +249,27 @@
       block:
         - name: Create firefox directory
           file:
-            path: "{{ ansible_env.HOME }}/.mozilla/firefox/"
+            path: "{{ item }}"
             state: directory
+          loop:
+            - "{{ ansible_env.HOME }}/.local/share/firefox/{{ ansible_env.USER }}"
+            - "{{ ansible_env.HOME }}/.mozilla/firefox"
 
         - name: Firefox - Create profiles.ini and installs.ini
           template: 
-            src: "firefox/{{ item }}.j2"
+            src: "roles/post-install/templates/firefox/{{ item }}.j2"
             dest: "{{ ansible_env.HOME }}/.mozilla/firefox/{{ item }}"
           loop:
             - profiles.ini
             - installs.ini
 
         - name: Firefox - Create default profile
-          command: firefox -headless -no-remote -CreateProfile "{{ ansible_user }} {{ ansible_env.HOME }}/.mozilla/firefox/{{ ansible_user }}"
+          command: firefox -headless -no-remote -CreateProfile "{{ ansible_user }} {{ ansible_env.HOME }}/.local/share/firefox/{{ ansible_user }}"
     
         - name: Firefox - Link configuration files
           file:
             src: "{{ ansible_env.HOME }}/.config/ffox/{{ item }}"
-            path: "{{ ansible_env.HOME }}/.mozilla/firefox/{{ item }}"
+            path: "{{ ansible_env.HOME }}/.local/share/firefox/{{ ansible_user }}/{{ item }}"
             state: link
           loop:
             - chrome
@@ -537,6 +540,11 @@
     - ~/repos/
     - ~/tmp/
     - ~/videos/
+    - ~/.ssh/
+    - ~/.gnupg/
     # $HOME/.config
+    - ~/.config/pam-gnupg
     - ~/.config/git/identity
+    # $HOME/.local/share
+    - ~/.local/share/newsboat/cache.db
   when: migrate

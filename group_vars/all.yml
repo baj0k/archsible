@@ -45,8 +45,8 @@ migrate: false
 aur_helper: yay
 
 # Configure audio & bluetooth
-audio: false
-bluetooth: false
+audio: true
+bluetooth: true
 
 # Include software specific tasks
 aur: true
@@ -54,12 +54,12 @@ docker: true
 dunst: true
 firefox: true
 git: true
-libvirt: false
-mpd: false
-mpv: false
-ncmpcpp: false
+libvirt: true
+mpd: true
+mpv: true
+ncmpcpp: true
 neofetch: true
-newsboat: false
+newsboat: true
 neovim: true
 ranger: true
 suckless: true
