@@ -99,7 +99,7 @@
         - { packages: [neovim,shellcheck], condition: "{{ neovim }}" }
         - { packages: [ranger,ueberzug], condition: "{{ ranger }}" }
         - { packages: [tmux], condition: "{{ tmux }}" }
-        - { packages: [xorg,xorg-xinit,xwallpaper,xclip,xcompmgr,xdotool,xorg-xprop,sxiv], condition: "{{ xorg }}" }
+        - { packages: [xorg,xorg-xinit,xwallpaper,xclip,xcompmgr,xdotool,xorg-xprop,sxiv,scrot], condition: "{{ xorg }}" }
         - { packages: [noto-fonts,ttf-joypixels,ttf-font-awesome,ttf-dejavu,ttf-inconsolata,ttf-liberation,adobe-source-han-sans-otc-fonts],condition: "{{ xorg }}" }
         - { packages: [pdfgrep,zathura,zathura-pdf-mupdf], condition: "{{ zathura }}" }
         - { packages: [bat,checkbashisms,zsh,zsh-completions,zsh-syntax-highlighting], condition: "{{ zsh }}" }
