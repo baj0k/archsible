@@ -1,3 +1,0 @@
-#!/bin/sh
-f=$(printf '%s' "$1" | awk -F/ '{print $NF}')
-echo Downloading "${f}" && /usr/bin/aria2c --conf-path=/etc/pacman.d/pacman-aria2.conf -d / -o "${2}" "${1}"

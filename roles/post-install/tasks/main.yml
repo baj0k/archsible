@@ -47,7 +47,7 @@
   block:
     - name: Create pacman config file
       template: 
-        src: pacman.conf.j2
+        src: pacman/pacman.conf.j2
         dest: /etc/pacman.conf
 
     - name: Create pacman hooks directory
@@ -57,13 +57,13 @@
 
     - name: Create pacman-aria2 script
       template: 
-        src: pacman-aria2.j2
+        src: pacman/pacman-aria2.j2
         dest: /usr/local/bin/pacman-aria2
         mode: +x
     
     - name: Create pacman-aria2 config file
       template: 
-        src: pacman-aria2.conf.j2
+        src: pacman/pacman-aria2.conf.j2
         dest: /etc/pacman.d/pacman-aria2.conf
 
     - name: Configure makepkg
@@ -85,7 +85,7 @@
       set_fact:
         conditional_packages: "{{ conditional_packages | default([]) + item.packages }}"
       loop:
-        - { packages: [pipewire,lib32-pipewire,wireplumber,pipewire-alsa,pipewire-pulse,pipewire-jack,lib32-pipewire-jack],condition: "{{ audio }}" }
+        - { packages: [pipewire,lib32-pipewire,wireplumber,pipewire-alsa,pipewire-pulse,pipewire-jack,lib32-pipewire-jack,pamixer,pulsemixer],condition: "{{ audio }}" }
         - { packages: [bluez,bluez-utils,blueman,bluez-hid2hci], condition: "{{ bluetooth }}" }
         - { packages: [dunst,libnotify], condition: "{{ dunst }}" }
         - { packages: [docker,docker-compose], condition: "{{ docker }}" }
@@ -98,9 +98,10 @@
         - { packages: [newsboat], condition: "{{ newsboat }}" }
         - { packages: [neovim,shellcheck], condition: "{{ neovim }}" }
         - { packages: [ranger,ueberzug], condition: "{{ ranger }}" }
+        - { packages: [htop,mpc], condition: "{{ suckless }}" }
         - { packages: [tmux], condition: "{{ tmux }}" }
         - { packages: [xorg,xorg-xinit,xwallpaper,xclip,xcompmgr,xdotool,xorg-xprop,sxiv,scrot], condition: "{{ xorg }}" }
-        - { packages: [noto-fonts,ttf-joypixels,ttf-font-awesome,ttf-dejavu,ttf-inconsolata,ttf-liberation,adobe-source-han-sans-otc-fonts],condition: "{{ xorg }}" }
+        - { packages: [noto-fonts,noto-fonts-emoji,ttf-joypixels,ttf-font-awesome,ttf-dejavu,ttf-inconsolata,ttf-liberation,adobe-source-han-sans-otc-fonts],condition: "{{ xorg }}" }
         - { packages: [pdfgrep,zathura,zathura-pdf-mupdf], condition: "{{ zathura }}" }
         - { packages: [bat,checkbashisms,zsh,zsh-completions,zsh-syntax-highlighting], condition: "{{ zsh }}" }
       when: item.condition
@@ -110,7 +111,7 @@
         name: "{{ item }}"
         state: present
       loop: 
-        - [base-devel,dash,git,man-db,man-pages,p7zip,wget,rsync,reflector,python-pip,pkgfile,pacman-contrib]
+        - [base-devel,dash,git,inetutils,man-db,man-pages,p7zip,pacman-contrib,pkgfile,python-pip,reflector,rsync,wget]
         - "{{ machine_specific_software }}"
         - "{{ conditional_packages }}"
 
@@ -147,21 +148,6 @@
 - name: Systemd configuration
   become: yes
   block:
-    - name: Create Xfer pacman-aria2dl script
-      template: 
-        src: pacman-aria2dl.j2
-        dest: /usr/local/bin/pacman-aria2dl
-
-    - name: Create pacman-aria2dl systemd service
-      template: 
-        src: pacman-aria2dl.service.j2
-        dest: /etc/systemd/system/pacman-aria2dl.service
-
-    - name: Create pacman-aria2dl systemd timer
-      template: 
-        src: pacman-aria2dl.timer.j2
-        dest: /etc/systemd/system/pacman-aria2dl.timer
-        
     - name: Enable service timer units
       systemd:
         daemon_reload: yes
@@ -170,7 +156,6 @@
       loop:
         - reflector.timer
         - pkgfile-update.timer
-        - pacman-aria2dl.timer
 
 - name: Bluetooth configuration
   become: yes
@@ -397,13 +382,6 @@
             groups: libvirt
             append: yes
     
-        - name: Libvirt - Change default virsh connection
-          lineinfile:
-            path: "{{ ansible_env.HOME }}/.config/libvirt/libvirt.conf"
-            state: present
-            create: yes
-            line: 'uri_default = "qemu:///system"'
-    
         - name: Libvirt - Enable daemon
           become: yes
           systemd:
@@ -439,6 +417,12 @@
           loop:
             - { name: default, path: vm }
             - { name: iso, path: iso }
+
+        # TODO: consider changing default network to bridge device
+        - name: Libvirt - Autostart default network
+          virt_net:
+            autostart: no
+            name: default
       when: libvirt
     
     - name: Newsboat configuration
@@ -457,16 +441,19 @@
           git:
             repo: https://github.com/baj0k/suckless-builds.git
             dest: "{{ ansible_env.HOME }}/repos/suckless-builds"
+          ignore_errors: yes
     
         - name: Suckless-builds - Install software
           become: yes
           make:
             chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/{{ item }}"
-            target: cleaninstall
+            target: install
           loop:
             - dmenu
             - dwm
             - dwmblocks
+            - pass
+            - scron
             - sent
             - slock
             - st
