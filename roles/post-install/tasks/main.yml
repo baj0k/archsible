@@ -276,6 +276,14 @@
             - { name: i-dont-care-about-cookies, id: jid1-KKzOGWgsW3Ao4Q@jetpack }
             - { name: privacy-badger17, id: jid1-MnnxcxisBPnSXQ@jetpack }
             - { name: passff, id: passff@invicem.pro }
+
+        - name: Firefox - Download pass extension host integration script
+          get_url:
+            url: "https://github.com/passff/passff-host/releases/latest/download/install_host_app.sh"
+            dest: "/tmp/passff_integration.sh"
+
+        - name: Firefox - Pass extension integration
+          command: "/bin/sh /tmp/passff_integration.sh"
       when: firefox
     
     - name: GUI setup
@@ -404,9 +412,9 @@
     
         - name: Libvirt - Create new storage pools
           virt_pool:
+            name: "{{ item.name }}"
             autostart: yes
             state: present
-            name: "{{ item.name }}"
             xml: "
             <pool type='dir'>
               <name>{{ item.name }}</name>
@@ -418,16 +426,31 @@
             - { name: default, path: vm }
             - { name: iso, path: iso }
 
-        # TODO: consider changing default network to bridge device
-        - name: Libvirt - Autostart default network
+        - name: Remove default network
           virt_net:
-            autostart: no
             name: default
+            state: absent
+
+        - name: Create default network
+          virt_net:
+            name: default
+            state: present
+            autostart: yes
+            xml: "
+            <network>
+              <name>default</name>
+              <forward mode='nat'/>
+              <bridge name='virbr0' stp='on' delay='0'/>
+              <ip address='10.10.0.1' netmask='255.255.255.0'>
+                <dhcp>
+                  <range start='10.10.0.2' end='10.10.0.254'/>
+                </dhcp>
+              </ip>
+            </network>"
       when: libvirt
     
     - name: Newsboat configuration
       block:
-    # TODO: move to systemd timers
         - name: Newsboat - Add crontab tasks
           lineinfile:
             path: "{{ ansible_env.HOME }}/.config/crontab" 
@@ -446,18 +469,8 @@
         - name: Suckless-builds - Install software
           become: yes
           make:
-            chdir: "{{ ansible_env.HOME }}/repos/suckless-builds/{{ item }}"
+            chdir: "{{ ansible_env.HOME }}/repos/suckless-builds"
             target: install
-          loop:
-            - dmenu
-            - dwm
-            - dwmblocks
-            - pass
-            - scron
-            - sent
-            - slock
-            - st
-            - tabbed
     
         - name: Suckless-builds - Remove libxft
           become: yes
